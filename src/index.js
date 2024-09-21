@@ -213,7 +213,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
         try {
         
                  const now = new Date();
-                 const nextIntervalMinutes = Math.ceil(now.getMinutes() / 5) * 5; 
+                 const nextIntervalMinutes = Math.ceil(now.getMinutes() / 15) * 15; 
                  const nextInterval = new Date(now);
                  nextInterval.setMinutes(nextIntervalMinutes, 0, 0); 
                  nextInterval.setMilliseconds(50); 
@@ -222,7 +222,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
      
                  if (delay < 0) {
                      // If the calculated time is in the past, adjust to the next 5-minute interval
-                     delay += 5 * 60 * 1000;
+                     delay += 15 * 60 * 1000;
                  }
      
 
@@ -243,8 +243,8 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
             }
          
          
-            if (Date.now() - tradeCompletedAt < 4 * 60 * 1000) {
-                console.log("Within the 3-minute cooldown period, waiting...");
+            if (Date.now() - tradeCompletedAt < 15 * 60 * 1000) {
+                console.log("Within the 15-minute cooldown period, waiting...");
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 continue; 
             }
@@ -274,7 +274,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
                 hasLoggedFindingTrades = true;
             }
             console.log("EMA->",ema200);
-            console.log("amc=", ema200*0.977)
+            console.log("amc=", ema200*0.937)
             if(price>ema200*1.007){
                 if(price>ema200*1.057 && (checkUpTrend(ohlcv)||checkSidewaysTrend(ohlcv) )){
                 trend="bearish"
