@@ -5,7 +5,7 @@ import { TaskManager } from "./TaskManager.js";
 import Trade from "./model.js";
 const taskManager = new TaskManager();
 
-export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfitPrice) => {
+export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfitPrice,pattern) => {
     console.log("take prfit price -",takeProfitPrice);
     const currentPrice = parseFloat(getCurrentPrice());
     const taskId = `placeOrder-${symbol}-${side}-${amount}`;
@@ -23,6 +23,7 @@ export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfit
             side,
             amount,
             entryPrice: currentPrice,
+            pattern
     
         });
         await trade.save();
@@ -54,7 +55,7 @@ export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfit
     }
 };
 
-export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, entry, sl, side, amount,tradeId) => {
+export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, entry, sl, side, amount,tradeId,pattern) => {
     let stopLossAdjusted = false;
     let secondLossAdjusted = false;
     const retries = 5; // Set a retry limit
@@ -230,6 +231,6 @@ export const displayTaskStatus = () => {
         if (task.error) {
             console.log(`  Error: ${task.error}`);
         }
-        console.log(); // Blank line for readability
+        
     }
 };

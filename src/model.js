@@ -12,6 +12,7 @@ const tradeSchema = new Schema({
     stopLossFilledTime: Date,
     takeProfitFilledTime: Date,
     status: { type: String, default: 'open' },
+    pattern :String ,
     result : String
    
 });

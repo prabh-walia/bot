@@ -113,7 +113,7 @@ const tracker=()=>{
  };
 
 
-const TradeExecutor = async (stopLossPrice,Ratio)=>{
+const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
     console.log("inside trade executor");
   while(trade==false){
    if(isBullishTrade ){
@@ -126,10 +126,10 @@ const TradeExecutor = async (stopLossPrice,Ratio)=>{
           let  quantity= getQuantity(candleSizePercent)
           console.log("quantity ->",quantity);
             if(quantity != 0 ) {
-                const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'buy', quantity, stopLossPrice, takeProfitPrice);
+                const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'buy', quantity, stopLossPrice, takeProfitPrice,pattern);
               
                 fallbackTradeActive =true
-               let  outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,stopLossPrice,'buy',quantity,tradeId);
+               let  outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,stopLossPrice,'buy',quantity,tradeId,pattern);
                displayTaskStatus();
                totalTrades++;
                if (outcome[0] === "profit") {
@@ -169,10 +169,10 @@ const TradeExecutor = async (stopLossPrice,Ratio)=>{
     console.log("quantity ->",quantity);
     
     if(quantity !=0 ){
-        const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'sell', quantity, stopLossPrice, takeProfitPrice);
+        const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'sell', quantity, stopLossPrice, takeProfitPrice,pattern);
 
         fallbackTradeActive =true
-        let outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,high,'sell',quantity,tradeId);
+        let outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,high,'sell',quantity,tradeId,pattern);
         totalTrades++;
         displayTaskStatus();
         if (outcome[0] === "profit") {
@@ -311,26 +311,26 @@ const TradeExecutor = async (stopLossPrice,Ratio)=>{
                         console.log("Trend ->",trend)
    
                         if (trend === "bullish") {
-                             let { stopLossPrice, ratio } = determineBullishTradeParameters(
+                             let { stopLossPrice, ratio ,pattern} = determineBullishTradeParameters(
                                 lastCandle, prevCandle,secondLastCandle, zones, price, priceWithinRange,ohlcv
                             );
                             console.log(`p-${patternFound},t-${tradeExecutionOpen}`)
                             if(patternFound && tradeExecutionOpen==false){
                                 console.log(" going to run trade executer")
                                 tradeExecutionOpen= true
-                                 TradeExecutor(stopLossPrice,ratio)
+                                 TradeExecutor(stopLossPrice,ratio,pattern)
                             }
 
                         }
 
                        else if ( trend =="bearish") {
-                        let { stopLossPrice, ratio } = determineBearishTradeParameters(
+                        let { stopLossPrice, ratio,pattern } = determineBearishTradeParameters(
                             lastCandle, prevCandle,secondLastCandle, zones, price, priceWithinRange,ohlcv
                         );
 
                         if(patternFound && tradeExecutionOpen==false){
                             tradeExecutionOpen= true
-                             TradeExecutor(stopLossPrice,ratio)
+                             TradeExecutor(stopLossPrice,ratio,pattern)
                         }
 
 
@@ -397,10 +397,11 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
            if(neutral){
               ratio = 1.9
            }else {
-            ratio = priceWithinRange ? 3.3 : 2.3;
+            ratio = priceWithinRange ? 3.5 : 2.6;
            }
              BullishValidated=true
-            return { stopLossPrice, ratio };
+     
+            return { stopLossPrice, ratio , patternType }
         } else if (isBullishHammer(lastCandle, prevCandle, secondLastCandle) && validateTradeConditionBullish(price,zones.support)) {
             patternType = "Hammer";
             stopLossPrice = lastCandle[3];
@@ -410,11 +411,12 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.4 : 2.3;
+              ratio = priceWithinRange ? 3.5 : 2.6;
              }
             console.log("hammer");
              BullishValidated=true
-            return { stopLossPrice,  ratio };
+
+            return { stopLossPrice,  ratio ,patternType};
         } 
         else if(isBullishHaramiPattern(lastCandle,prevCandle) && (validateTradeConditionBullish(price,zones.support)|| checkSidewaysTrend(ohlcv))){
             patternType = "harami";
@@ -426,11 +428,12 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
            if(neutral){
               ratio = 1.9
            }else {
-            ratio = priceWithinRange ? 3.4 : 2.3;
+            ratio = priceWithinRange ? 3.5 : 2.6;
            }
            console.log("harami");
              BullishValidated=true
-            return { stopLossPrice, ratio };
+
+            return { stopLossPrice, ratio ,patternType};
         }
         else {
             console.log("Pattern not recognized");
@@ -440,7 +443,7 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
 
     } else {
         console.log("Pattern not found");
-        return { stopLossPrice: null,  ratio: null };
+        return { stopLossPrice: null,  ratio: null,patternType:null };
     }
 };
 const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle, zones, price, priceWithinRange,ohlcv) => {
@@ -459,11 +462,11 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.0 : 2.2;
+              ratio = priceWithinRange ? 3.3 : 2.3;
              }
-            
+             
             BearishValidated = true;
-            return { stopLossPrice, ratio };
+            return { stopLossPrice, ratio,patternType };
         } else if (isBearishHammer(lastCandle, prevCandle,secondLastCandle) && validateTradeConditionBearish(price, zones.resistance)) {
             patternType = "Hammer";
             stopLossPrice = lastCandle[2];
@@ -473,11 +476,11 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.0 : 2.2;
+              ratio = priceWithinRange ? 3.3 : 2.3;
              }
   
             BearishValidated = true;
-            return { stopLossPrice, ratio };
+            return { stopLossPrice, ratio,patternType };
         } 
         else if(isBearishHaramiPattern(lastCandle,prevCandle) && (validateTradeConditionBearish(price, zones.resistance)|| checkSidewaysTrend(ohlcv))){
             patternType = "harami";
@@ -489,19 +492,19 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.0 : 2.2;
+              ratio = priceWithinRange ? 3.3 : 2.3;
              }
             console.log("harami")
             BearishValidated = true;
-            return { stopLossPrice, ratio };
+            return { stopLossPrice, ratio ,patternType};
         }
         else {
             console.log("Pattern not recognized");
-            return { stopLossPrice: null, ratio: null };
+            return { stopLossPrice: null, ratio: null,patternType:null };
         }
 
     } else {
         console.log("Pattern not found");
-        return { stopLossPrice: null,  ratio: null };
+        return { stopLossPrice: null,  ratio: null,patternType:null};
     }
 };

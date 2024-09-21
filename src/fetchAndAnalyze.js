@@ -37,8 +37,8 @@ const calculateAverage = (data) => {
     }
 
     // Extract closing prices for the last 20 candles and the previous 20 candles
-    const last20ClosingPrices = ohlcv.slice(-10).map(candle => candle[4]);
-    const prev20ClosingPrices = ohlcv.slice(-20, -10).map(candle => candle[4]);
+    const last20ClosingPrices = ohlcv.slice(-15).map(candle => candle[4]);
+    const prev20ClosingPrices = ohlcv.slice(-30, -15).map(candle => candle[4]);
 
     // Calculate average closing prices
     const avgLast20 = calculateAverage(last20ClosingPrices);
@@ -62,8 +62,8 @@ export const checkUpTrend = async (ohlcv) => {
     }
 
     // Extract closing prices for the last 20 candles and the previous 20 candles
-    const last20ClosingPrices = ohlcv.slice(-10).map(candle => candle[4]);
-    const prev20ClosingPrices = ohlcv.slice(-20, -10).map(candle => candle[4]);
+    const last20ClosingPrices = ohlcv.slice(-15).map(candle => candle[4]);
+    const prev20ClosingPrices = ohlcv.slice(-30, -15).map(candle => candle[4]);
 
     // Calculate average closing prices
     const avgLast20 = calculateAverage(last20ClosingPrices);
@@ -86,15 +86,15 @@ export const checkSidewaysTrend = async (ohlcv) => {
     }
 
     // Extract high and low prices for the last 20 candles
-    const highPrices = ohlcv.map(candle => candle[2]);
-    const lowPrices = ohlcv.map(candle => candle[3]);
+    const highPrices = ohlcv.slice(-20).map(candle => candle[2]);
+    const lowPrices = ohlcv.slice(-20).map(candle => candle[3]);
 
     // Calculate the highest high and the lowest low
     const highestHigh = Math.max(...highPrices);
     const lowestLow = Math.min(...lowPrices);
 
     // Define the threshold for sideways movement (you can adjust this based on your strategy)
-    const thresholdPercentage = 0.7; // Example: 0.5% price range is considered sideways
+    const thresholdPercentage = 0.6; // Example: 0.5% price range is considered sideways
 
     // Calculate the percentage difference between the highest high and lowest low
     const priceRangePercentage = ((highestHigh - lowestLow) / highestHigh) * 100;
@@ -112,7 +112,7 @@ export const  fetchAndAnalyzeBiggerFrame= async (timeframe)=>{
         const ohlcv_B = await binance.fetchOHLCV(SYMBOL, timeframe, undefined, LIMIT);
         const closingPrices = ohlcv_B.map(entry => entry[4]);
         let ema200 = calculate200EMA(closingPrices);
-        ema200=ema200+40
+        ema200=ema200+200
          
         return { ema200,ohlcv_B };
     } catch (error) {

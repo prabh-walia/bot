@@ -13,29 +13,25 @@ export const calculate200EMA = (prices) => {
 
     return ema;
 };
-
+const baseQuantity = 0.01
 export const getQuantity = (candleSizePercent) => {
-    if (candleSizePercent >= 0.3 && candleSizePercent <= 0.4) {
-        return 0.002;
-    } else if (candleSizePercent >= 0.2 && candleSizePercent < 0.3) {
-        return 0.003;
-    } else if (candleSizePercent >= 0.15 && candleSizePercent < 0.2) {
-        return 0.004;
-    } 
-    else if(candleSizePercent>=0.11&& candleSizePercent < 0.15){
-        return 0.005
-        }
-        else if(candleSizePercent>=0.05&&candleSizePercent<0.11){
-             return 0.008
-        }
-        else if(candleSizePercent>=0.03&&candleSizePercent<0.05){
-           return 0.009
-        }
-    
-    else {
-        console.log("Candle size doesn't fall within the defined ranges.");
-        return 0; // Return 0 or handle this case as needed
+
+    if (candleSizePercent > 0.8) {
+        return 0; // No trade for large candles above 0.9%
     }
+
+    // The larger the candle size percentage, the smaller the quantity
+    const calculatedQuantity = (0.1 / candleSizePercent) * baseQuantity;
+
+    // Round the quantity to the nearest multiple of 0.001 (since 0.001 is the minimum lot size)
+    const roundedQuantity = Math.round(calculatedQuantity * 1000) / 1000;
+
+    // Ensure the rounded quantity is not smaller than 0.001 (minimum lot size)
+    if (roundedQuantity < 0.001) {
+        return 0.001;
+    }
+
+    return roundedQuantity;
 };
 // Function to find recent support and resistance levels
 export  function findSwings(ohlcv, length) {
