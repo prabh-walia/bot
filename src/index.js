@@ -285,8 +285,8 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
             }
             console.log("EMA->",ema200);
             console.log("amc=", ema200*0.977)
-            if(price>ema200*1.007){
-                if(price>ema200*1.057 && (checkUpTrend(ohlcv)||checkSidewaysTrend(ohlcv) )){
+            if(price>ema200*1.013){
+                if(price>ema200*1.062 && (checkUpTrend(ohlcv)||checkSidewaysTrend(ohlcv) )){
                 trend="bearish"
                 console.log("  bearished 3%");
                 }
@@ -299,8 +299,8 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
            
             }
 
-            else if(price < ema200*0.992 ){
-               if(price < ema200*0.937 && (checkDownTrend(ohlcv)|| checkSidewaysTrend(ohlcv))){
+            else if(price < ema200*0.987 ){
+               if(price < ema200*0.936 && (checkDownTrend(ohlcv)|| checkSidewaysTrend(ohlcv))){
                    trend = "bullish"
                    console.log("  bullished 3%");
               
@@ -316,7 +316,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
         
   
                
-                    const priceWithinRange = price >= ema200 * 0.993 && price <= ema200 * 1.006;
+                    const priceWithinRange = price >= ema200 * 0.986 && price <= ema200 * 1.014;
 
                         console.log("Trend ->",trend)
    
