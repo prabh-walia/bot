@@ -30,6 +30,7 @@ let isBullishTrade = false
 let isBearishTrade = false
 let profitTrades =0;
 let totalTrades = 0;
+let totalFees=0;
  let tradeCompletedAt=0
  let trend;
  const getRandomDelay = () => Math.floor(Math.random() * (190 - 60 + 1)) + 100;
@@ -138,10 +139,14 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
                  let profit =quantity *(outcome[1]-currentPrice)
                  profitTrades++;
                   totalProfit += profit
+                  let fees = quantity * (0.1 / 100);
+                  totalFees += fees*currentPrice
             }else {
                 console.log(` loss -price ->${currentPrice} ${typeof currentPrice}  outcome1- ${outcome[1]}  ${typeof outcome[1]}`);
                 let loss = quantity * (currentPrice - outcome[1])
                 totalLoss += loss
+                let fees = quantity * (0.1 / 100);
+                  totalFees += fees*currentPrice
             }
             }
         
@@ -180,11 +185,15 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
             console.log(`profit -price ->${currentPrice} ${typeof currentPrice}  outcome1- ${outcome[1]}  ${typeof outcome[1]}`);
             let profit =quantity *(currentPrice-outcome[1])
             profitTrades++;
-           totalProfit += profit // Example profit calculation
+           totalProfit += profit ;
+           let fees = quantity * (0.1 / 100);
+                  totalFees += fees*currentPrice
        }else {
         console.log(`loss price ->${currentPrice} ${typeof currentPrice} outcome1- ${outcome[1]} ${typeof outcome[1]}`);
            let loss = quantity * (outcome[1]- currentPrice )
            totalLoss += loss
+           let fees = quantity * (0.1 / 100);
+          totalFees += fees*currentPrice
        }
     }
 
@@ -353,6 +362,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
         console.log(`loss ${totalLoss} `)
         console.log("total trades -",totalTrades)
         console.log("total profitable trades -",profitTrades)
+        console.log("Total fees ->", totalFees)
         console.log("errorZ - ", error)
         
 
@@ -463,7 +473,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.3 : 2.3;
+              ratio = priceWithinRange ? 3.3 : 2.4;
              }
              
             BearishValidated = true;
@@ -477,7 +487,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.3 : 2.3;
+              ratio = priceWithinRange ? 3.3 : 2.4;
              }
   
             BearishValidated = true;
@@ -493,7 +503,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.3 : 2.3;
+              ratio = priceWithinRange ? 3.3 : 2.4;
              }
             console.log("harami")
             BearishValidated = true;

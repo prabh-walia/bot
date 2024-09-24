@@ -13,14 +13,30 @@ export const calculate200EMA = (prices) => {
 
     return ema;
 };
-const baseQuantity = 0.01
-export const getQuantity = (candleSizePercent) => {
+const baseQuantity = 0.01; // Base quantity for small candles
 
-    if (candleSizePercent > 0.8) {
-        return 0; // No trade for large candles above 0.9%
+// Function to calculate quantity based on candle size percent
+export const getQuantity = (candleSizePercent) => {
+    const feePercent = 0.1; // Fixed fee percentage (0.1%)
+    const maxFeePercentage = 10; // Maximum allowed fee percentage of profits
+
+    // For large candles, we want smaller quantities
+    if (candleSizePercent > 0.9) {
+        return 0; // No trade for candle sizes above 0.9%
     }
 
-    // The larger the candle size percentage, the smaller the quantity
+    // Calculate the potential profit (for example, 2.5x the candle size)
+    const potentialProfitPercent = candleSizePercent * 2.5; // Expected profit based on candle size
+
+    // Calculate the fee amount
+    const feeAmount = (feePercent / 100) * baseQuantity; // Fee based on quantity
+
+    // Ensure the fee is no more than 10% of the potential profit
+    if (feeAmount > (maxFeePercentage / 100) * potentialProfitPercent) {
+        return 0; // Skip trade if the fee would take more than 10% of the profit
+    }
+
+    // Calculate the quantity, inversely proportional to the candle size, but limited
     const calculatedQuantity = (0.1 / candleSizePercent) * baseQuantity;
 
     // Round the quantity to the nearest multiple of 0.001 (since 0.001 is the minimum lot size)

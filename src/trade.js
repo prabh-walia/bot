@@ -10,7 +10,7 @@ export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfit
     const currentPrice = parseFloat(getCurrentPrice());
     const taskId = `placeOrder-${symbol}-${side}-${amount}`;
     taskManager.addTask(taskId, "Placing primary order ");
-
+   console.log("pattern->",pattern)
     try {
         // Place the primary market order
         const primaryOrder = await binance.createOrder(symbol, 'market', side, amount);
@@ -23,7 +23,7 @@ export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfit
             side,
             amount,
             entryPrice: currentPrice,
-            pattern
+            pattern:pattern
     
         });
         await trade.save();
