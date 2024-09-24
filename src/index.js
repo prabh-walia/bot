@@ -272,7 +272,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
 
             const lastCandle = ohlcv[ohlcv.length - 2];
             console.log("last candle -", ohlcv[ohlcv.length-2])
-            const prevCandle = ohlcv[ohlcv.length - 3];s
+            const prevCandle = ohlcv[ohlcv.length - 3];
             const secondLastCandle = ohlcv[ohlcv.length - 4];
             const swings = findSwings(ohlcv,4);
             const excludedIndexes = [199];
