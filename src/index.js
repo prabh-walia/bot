@@ -20,6 +20,7 @@ let patternFound = false
 let fallbackTradeActive = false;
 let BullishValidated = false
 let BearishValidated = false
+let patterns = []
 
 let BullishPatternFound = false
 let BearishPatternFound = false
@@ -130,6 +131,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
                 const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'buy', quantity, stopLossPrice, takeProfitPrice,pattern);
               
                 fallbackTradeActive =true
+                patterns.push(pattern)
                let  outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,stopLossPrice,'buy',quantity,tradeId,pattern);
                displayTaskStatus();
                totalTrades++;
@@ -177,6 +179,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
         const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'sell', quantity, stopLossPrice, takeProfitPrice,pattern);
 
         fallbackTradeActive =true
+        patterns.push(pattern)
         let outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,high,'sell',quantity,tradeId,pattern);
         totalTrades++;
         displayTaskStatus();
@@ -364,6 +367,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
         console.log("total profitable trades -",profitTrades)
         console.log("Total fees ->", totalFees)
         console.log("errorZ - ", error)
+         patterns.map((pattern)=>  console.log("patterns ->",pattern))
         
 
       
