@@ -76,35 +76,40 @@ export const checkUpTrend = async (ohlcv) => {
     } 
     return false
 };
-export const checkSidewaysTrend = async (ohlcv) => {
-    const limit = 25; // Fetch enough candles to analyze the sideways movement
+const calculateAverageHighLow = (candles) => {
+    const totalHigh = candles.reduce((acc, candle) => acc + candle[2], 0);
+    const totalLow = candles.reduce((acc, candle) => acc + candle[3], 0);
+    
+    const averageHigh = totalHigh / candles.length;
+    const averageLow = totalLow / candles.length;
 
-
-    if (ohlcv.length < limit) {
-        console.log('Not enough data to analyze.');
-        return;
-    }
-
-    // Extract high and low prices for the last 20 candles
-    const highPrices = ohlcv.slice(-20).map(candle => candle[2]);
-    const lowPrices = ohlcv.slice(-20).map(candle => candle[3]);
-
-    // Calculate the highest high and the lowest low
-    const highestHigh = Math.max(...highPrices);
-    const lowestLow = Math.min(...lowPrices);
-
-    // Define the threshold for sideways movement (you can adjust this based on your strategy)
-    const thresholdPercentage = 0.6; // Example: 0.5% price range is considered sideways
-
-    // Calculate the percentage difference between the highest high and lowest low
-    const priceRangePercentage = ((highestHigh - lowestLow) / highestHigh) * 100;
-
-    if (priceRangePercentage <= thresholdPercentage) {
-        console.log("sideways");
-        return true;
-    } 
-    return false;
+    return { averageHigh, averageLow };
 };
+
+export const checkSidewaysTrend = async (ohlcv) => {
+    const { averageHigh, averageLow } = calculateAverageHighLow(ohlcv.slice(-15));
+    
+    // Calculate the difference
+    const difference = averageHigh - averageLow;
+
+    // Calculate 0.6% of the average high
+    const threshold = averageHigh * 0.003;
+
+    // Check if the difference is less than 0.6%
+    return difference < threshold;
+};
+export const checkFrequentSideways=(ohlcv)=>{
+    const { averageHigh, averageLow } = calculateAverageHighLow(ohlcv.slice(-6));
+    
+    // Calculate the difference
+    const difference = averageHigh - averageLow;
+
+    // Calculate 0.6% of the average high
+    const threshold = averageHigh * 0.0025;
+
+    // Check if the difference is less than 0.6%
+    return difference < threshold;
+}
 export const  fetchAndAnalyzeBiggerFrame= async (timeframe)=>{
         
     try {

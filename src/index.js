@@ -1,4 +1,4 @@
-import { fetchAndAnalyzeCandles, fetchAndAnalyzeBiggerFrame, avgSwingHigh, avgSwingLow, Trend,checkDownTrend,checkSidewaysTrend,checkUpTrend } from "./fetchAndAnalyze.js";
+import { fetchAndAnalyzeCandles, fetchAndAnalyzeBiggerFrame, avgSwingHigh, avgSwingLow, Trend,checkDownTrend,checkSidewaysTrend,checkUpTrend,checkFrequentSideways } from "./fetchAndAnalyze.js";
 import { isBullishEngulfing, isBearishEngulfing, isBullishHammer, isBearishHammer, isInsideCandle, isBearishHaramiPattern, isBullishHaramiPattern } from "./patterns.js";
 import { placeOrder, monitorOrders ,displayTaskStatus} from "./trade.js";
 import { binance } from "./binanceClient.js";
@@ -115,7 +115,7 @@ const tracker=()=>{
  };
 
 
-const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
+const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
     console.log("inside trade executor");
   while(trade==false){
    if(isBullishTrade ){
@@ -128,11 +128,11 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
           let  quantity= getQuantity(candleSizePercent)
           console.log("quantity ->",quantity);
             if(quantity != 0 ) {
-                const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'buy', quantity, stopLossPrice, takeProfitPrice,pattern);
+                const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'buy', quantity, stopLossPrice, takeProfitPrice,patternType);
               
                 fallbackTradeActive =true
-                patterns.push(pattern)
-               let  outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,stopLossPrice,'buy',quantity,tradeId,pattern);
+                patterns.push(patternType)
+               let  outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,stopLossPrice,'buy',quantity,tradeId,patternType);
                displayTaskStatus();
                totalTrades++;
                if (outcome[0] === "profit") {
@@ -176,10 +176,10 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
     console.log("quantity ->",quantity);
     
     if(quantity !=0 ){
-        const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'sell', quantity, stopLossPrice, takeProfitPrice,pattern);
+        const { stopLossOrder, takeProfitOrder ,currentPrice,tradeId} = await placeOrder(SYMBOL, 'sell', quantity, stopLossPrice, takeProfitPrice,patternType);
 
         fallbackTradeActive =true
-        patterns.push(pattern)
+        patterns.push(patternType)
         let outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,high,'sell',quantity,tradeId,pattern);
         totalTrades++;
         displayTaskStatus();
@@ -288,8 +288,8 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
             }
             console.log("EMA->",ema200);
             console.log("amc=", ema200*0.977)
-            if(price>ema200*1.013){
-                if(price>ema200*1.062 && (checkUpTrend(ohlcv)||checkSidewaysTrend(ohlcv) )){
+            if(price>ema200*1.011){
+                if(price>ema200*1.052 && (checkUpTrend(ohlcv)||checkSidewaysTrend(ohlcv) )){
                 trend="bearish"
                 console.log("  bearished 3%");
                 }
@@ -302,8 +302,8 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
            
             }
 
-            else if(price < ema200*0.987 ){
-               if(price < ema200*0.936 && (checkDownTrend(ohlcv)|| checkSidewaysTrend(ohlcv))){
+            else if(price < ema200*0.99 ){
+               if(price < ema200*0.946 && (checkDownTrend(ohlcv)|| checkSidewaysTrend(ohlcv))){
                    trend = "bullish"
                    console.log("  bullished 3%");
               
@@ -319,31 +319,31 @@ const TradeExecutor = async (stopLossPrice,Ratio,pattern)=>{
         
   
                
-                    const priceWithinRange = price >= ema200 * 0.986 && price <= ema200 * 1.014;
+                    const priceWithinRange = price >= ema200 * 0.988 && price <= ema200 * 1.012;
 
                         console.log("Trend ->",trend)
    
                         if (trend === "bullish") {
-                             let { stopLossPrice, ratio ,pattern} = determineBullishTradeParameters(
+                             let { stopLossPrice, ratio ,patternType} = determineBullishTradeParameters(
                                 lastCandle, prevCandle,secondLastCandle, zones, price, priceWithinRange,ohlcv
                             );
                             console.log(`p-${patternFound},t-${tradeExecutionOpen}`)
                             if(patternFound && tradeExecutionOpen==false){
                                 console.log(" going to run trade executer")
                                 tradeExecutionOpen= true
-                                 TradeExecutor(stopLossPrice,ratio,pattern)
+                                 TradeExecutor(stopLossPrice,ratio,patternType)
                             }
 
                         }
 
                        else if ( trend =="bearish") {
-                        let { stopLossPrice, ratio,pattern } = determineBearishTradeParameters(
+                        let { stopLossPrice, ratio,patternType } = determineBearishTradeParameters(
                             lastCandle, prevCandle,secondLastCandle, zones, price, priceWithinRange,ohlcv
                         );
 
                         if(patternFound && tradeExecutionOpen==false){
                             tradeExecutionOpen= true
-                             TradeExecutor(stopLossPrice,ratio,pattern)
+                             TradeExecutor(stopLossPrice,ratio,patternType)
                         }
 
 
@@ -415,9 +415,9 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             ratio = priceWithinRange ? 3.5 : 2.6;
            }
              BullishValidated=true
-     
+             console.log("pattern -r", patternType)
             return { stopLossPrice, ratio , patternType }
-        } else if (isBullishHammer(lastCandle, prevCandle, secondLastCandle) && validateTradeConditionBullish(price,zones.support)) {
+        } else if (isBullishHammer(lastCandle, prevCandle, secondLastCandle) && validateTradeConditionBullish(price,zones.support)&& checkFrequentSideways(ohlcv)) {
             patternType = "Hammer";
             stopLossPrice = lastCandle[3];
             high = lastCandle[2];
@@ -430,7 +430,7 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
              }
             console.log("hammer");
              BullishValidated=true
-
+             console.log("pattern -r", patternType)
             return { stopLossPrice,  ratio ,patternType};
         } 
         else if(isBullishHaramiPattern(lastCandle,prevCandle) && (validateTradeConditionBullish(price,zones.support)|| checkSidewaysTrend(ohlcv))){
@@ -447,7 +447,7 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
            }
            console.log("harami");
              BullishValidated=true
-
+             console.log("pattern -r", patternType)
             return { stopLossPrice, ratio ,patternType};
         }
         else {
@@ -479,10 +479,10 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
              }else {
               ratio = priceWithinRange ? 3.3 : 2.4;
              }
-             
+             console.log("pattern -r", patternType)
             BearishValidated = true;
             return { stopLossPrice, ratio,patternType };
-        } else if (isBearishHammer(lastCandle, prevCandle,secondLastCandle) && validateTradeConditionBearish(price, zones.resistance)) {
+        } else if (isBearishHammer(lastCandle, prevCandle,secondLastCandle) && validateTradeConditionBearish(price, zones.resistance)&& checkFrequentSideways(ohlcv) ) {
             patternType = "Hammer";
             stopLossPrice = lastCandle[2];
             high = stopLossPrice
@@ -495,6 +495,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
              }
   
             BearishValidated = true;
+            console.log("pattern -r", patternType)
             return { stopLossPrice, ratio,patternType };
         } 
         else if(isBearishHaramiPattern(lastCandle,prevCandle) && (validateTradeConditionBearish(price, zones.resistance)|| checkSidewaysTrend(ohlcv))){
@@ -509,7 +510,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
              }else {
               ratio = priceWithinRange ? 3.3 : 2.4;
              }
-            console.log("harami")
+            console.log("pattern -r", patternType)
             BearishValidated = true;
             return { stopLossPrice, ratio ,patternType};
         }

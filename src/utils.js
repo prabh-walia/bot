@@ -21,7 +21,7 @@ export const getQuantity = (candleSizePercent) => {
     const maxFeePercentage = 10; // Maximum allowed fee percentage of profits
 
     // For large candles, we want smaller quantities
-    if (candleSizePercent > 0.9) {
+    if (candleSizePercent > 0.8) {
         return 0; // No trade for candle sizes above 0.9%
     }
 
@@ -138,8 +138,8 @@ export function validateTradeConditionBullish(price, supportLevels) {
         const supportPrice = support.price;
     
         // Calculate the thresholds (0.1% below and above the support price)
-        const lowerThreshold = supportPrice * 0.997; 
-        const upperThreshold = supportPrice * 1.003; 
+        const lowerThreshold = supportPrice * 0.996; 
+        const upperThreshold = supportPrice * 1.004; 
     
         // Check if the price is within the range between the lower and upper thresholds
         if (price >= lowerThreshold && price <= upperThreshold) {
@@ -159,8 +159,8 @@ export function validateTradeConditionBullish(price, supportLevels) {
       const resistancePrice = resistance.price;
   
       // Calculate the thresholds (0.1% below and above the resistance price)
-      const lowerThreshold = resistancePrice * 0.997; // 0.1% below
-      const upperThreshold = resistancePrice * 1.0025; // 0.1% above
+      const lowerThreshold = resistancePrice * 0.996; // 0.1% below
+      const upperThreshold = resistancePrice * 1.004; // 0.1% above
   
       // Check if the price is within the range between the lower and upper thresholds
       if (price >= lowerThreshold && price <= upperThreshold) {
