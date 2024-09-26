@@ -180,7 +180,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
 
         fallbackTradeActive =true
         patterns.push(patternType)
-        let outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,high,'sell',quantity,tradeId,pattern);
+        let outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,high,'sell',quantity,tradeId,patternType);
         totalTrades++;
         displayTaskStatus();
         if (outcome[0] === "profit") {
