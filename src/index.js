@@ -5,7 +5,7 @@ import { binance } from "./binanceClient.js";
 
 import { SYMBOL, AMOUNT, FIXED_RISK_AMOUNT , LEVERAGE,BIGGER_TIMEFRAME} from "./config.js";
 import { getQuantity ,getSupportAndResistanceZones,validateTradeConditionBearish,validateTradeConditionBullish,findSwings} from "./utils.js";
-import  { initWebSocket, getCurrentPrice, osnPriceUpdate, closeWebSocket }  from  "./websocket.js"
+import  { initWebSocket, getCurrentPrice, onPriceUpdate, closeWebSocket }  from  "./websocket.js"
 let trade = false;
 let Ratio = 2.8
 let high=null;let low=null;
