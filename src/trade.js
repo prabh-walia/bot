@@ -1,20 +1,19 @@
 import { binance } from "./binanceClient.js";
 import { SYMBOL } from "./config.js";
 import { initWebSocket, getCurrentPrice, onPriceUpdate, closeWebSocket } from "./websocket.js"
-import { TaskManager } from "./TaskManager.js";
+
 import Trade from "./model.js";
-const taskManager = new TaskManager();
+
 
 export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfitPrice,pattern) => {
     console.log("take prfit price -",takeProfitPrice);
     const currentPrice = parseFloat(getCurrentPrice());
-    const taskId = `placeOrder-${symbol}-${side}-${amount}`;
-    taskManager.addTask(taskId, "Placing primary order ");
+
    console.log("pattern->",pattern)
     try {
         // Place the primary market order
         const primaryOrder = await binance.createOrder(symbol, 'market', side, amount);
-        taskManager.updateTaskStatus(taskId, "executed");
+
         console.log('Primary market order executed');
         let tradeId = primaryOrder.id
         const trade = new Trade({
@@ -33,7 +32,7 @@ export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfit
         const stopLossOrder = await binance.createOrder(symbol, 'STOP_MARKET', slSide, amount, undefined, {
             'stopPrice': stopLossPrice
         });
-        taskManager.updateTaskStatus(taskId, "stop loss order placed");
+    
 
         console.log('Stop loss order created'); 
 
@@ -41,7 +40,7 @@ export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfit
         const takeProfitOrder = await binance.createOrder(symbol, 'TAKE_PROFIT_MARKET', slSide, amount, undefined, {
             'stopPrice': takeProfitPrice
         });
-        taskManager.updateTaskStatus(taskId, "take profit order placed");
+ 
 
         console.log('Take profit order created:');
 
@@ -49,9 +48,7 @@ export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfit
 
     } catch (error) {
         console.error('Error creating orders:', error);
-        taskManager.updateTaskStatus(taskId, "failed", error.message);
-        taskManager.retryTask(taskId, () => placeOrder(symbol, side, amount, stopLossPrice, takeProfitPrice));
- 
+       
     }
 };
 
@@ -59,8 +56,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
     let stopLossAdjusted = false;
     let secondLossAdjusted = false;
     const retries = 5; // Set a retry limit
-    const monitorTaskId = `monitorOrders-${symbol}`;
-    taskManager.addTask(monitorTaskId, `Monitoring orders for ${symbol}`);
+
     try {
         while (true) {
             for (let i = 0; i < retries; i++) {
@@ -77,7 +73,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                         console.log('Stop loss order filled. Cancelling take profit order...');
                         await binance.cancelOrder(takeProfitOrderId, symbol);
                         console.log('Take profit order cancelled');
-                        taskManager.updateTaskStatus(monitorTaskId, "stop loss filled and tp order cancelled");
+                       
 
                         const trade = await Trade.findOne({ tradeId: tradeId });
                         if (trade) {
@@ -107,7 +103,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                             await trade.save();
                             console.log('Trade updated with take profit execution:', trade);
                         }
-                        taskManager.updateTaskStatus(monitorTaskId, "take profit executed and sl order cancelled");
+                        
                         return ["profit", takeProfitOrderStatus.price];
                     }
 
@@ -119,7 +115,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                                 console.log('Price reached 1.8x of loss. Adjusting stop loss again...');
       
                                 await binance.cancelOrder(stopLossOrderId, symbol);
-                                taskManager.updateTaskStatus(monitorTaskId, "previous sl order cancelled");
+                               
                                 console.log('Second stop loss order cancelled');
 
                                 const newStopLossPrice = entry + (Loss * 0.05); // Adjusted to 20% more near
@@ -130,7 +126,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                                 });
 
                                 secondLossAdjusted = true;
-                                taskManager.updateTaskStatus(monitorTaskId, "second sl order created");
+                            
                                 console.log('Second new stop loss order created', newStopLossPrice);
 
                                 stopLossOrderId = newStopLossOrder.id; // Update the stop loss order ID
@@ -138,7 +134,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                             else if(stopLossAdjusted == false){
                                 console.log('Price reached partial take profit threshold. Adjusting stop loss...');
                                 await binance.cancelOrder(stopLossOrderId, symbol);
-                                taskManager.updateTaskStatus(monitorTaskId, "previous sl trail order cancelled");
+                              
                                 console.log('Current stop loss order cancelled');
     
                                 const newStopLossPrice = entry + (Loss * 0.25);
@@ -147,7 +143,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                                 const newStopLossOrder = await binance.createOrder(symbol, 'STOP_MARKET', slSide, amount, undefined, {
                                     'stopPrice': newStopLossPrice
                                 });
-                                taskManager.updateTaskStatus(monitorTaskId, "new sl order created");
+                               
                                 stopLossAdjusted = true;
                                 console.log('New stop loss order created', newStopLossPrice);
     
@@ -161,14 +157,14 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                                 console.log('Price reached 1.8x of loss. Adjusting stop loss again...');
                                 await binance.cancelOrder(stopLossOrderId, symbol);
                                 console.log('Second stop loss order cancelled');
-                                taskManager.updateTaskStatus(monitorTaskId, "previous sl order cancelled");
+                              
                                 const newStopLossPrice = entry - (Loss * 0.05); // Adjusted to 20% more near
                                 const slSide = 'sell';
     
                                 const newStopLossOrder = await binance.createOrder(symbol, 'STOP_MARKET', slSide, amount, undefined, {
                                     'stopPrice': newStopLossPrice
                                 });
-                                taskManager.updateTaskStatus(monitorTaskId, "second sl order created");
+                               
                                 secondLossAdjusted = true;
                                 console.log('Second new stop loss order created', newStopLossPrice);
     
@@ -178,14 +174,14 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                                 console.log('Price reached partial take profit threshold. Adjusting stop loss...');
                                 await binance.cancelOrder(stopLossOrderId, symbol);
                                 console.log('Current stop loss order cancelled');
-                                taskManager.updateTaskStatus(monitorTaskId, "previous sl trail order cancelled");
+                               
                                 const newStopLossPrice = entry - (Loss * 0.25);
                                 const slSide = 'sell';
     
                                 const newStopLossOrder = await binance.createOrder(symbol, 'STOP_MARKET', slSide, amount, undefined, {
                                     'stopPrice': newStopLossPrice
                                 });
-                                taskManager.updateTaskStatus(monitorTaskId, "new sl order created");
+                
                                 stopLossAdjusted = true;
                                 console.log('New stop loss order created', newStopLossPrice);
     
@@ -201,7 +197,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                         await new Promise(resolve => setTimeout(resolve, (i + 1) * 1300)); // Exponential backoff
                     } else {
                         console.error('Error monitoring orders after retries:', error);
-                        taskManager.updateTaskStatus(monitorTaskId, "failed", error.message);
+                       
                       
                         throw error;
                     }
@@ -213,24 +209,10 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
         }
     } catch (error) {
         console.error('Final Error monitoring orders:', error.message);
-        taskManager.updateTaskStatus(monitorTaskId, "failed", error.message);
+ 
         throw error;
     }
 
 };
 
 
-
-export const displayTaskStatus = () => {
-    const tasks = taskManager.getAllTasks();
-    console.log("Task Status Overview:");
-    for (const [taskId, task] of Object.entries(tasks)) {
-        console.log(`Task ID: ${taskId}`);
-        console.log(`  Description: ${task.description}`);
-        console.log(`  Status: ${task.status}`);
-        if (task.error) {
-            console.log(`  Error: ${task.error}`);
-        }
-        
-    }
-};

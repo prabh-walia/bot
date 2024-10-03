@@ -1,11 +1,11 @@
 import { fetchAndAnalyzeCandles, fetchAndAnalyzeBiggerFrame, avgSwingHigh, avgSwingLow, Trend,checkDownTrend,checkSidewaysTrend,checkUpTrend,checkFrequentSideways } from "./fetchAndAnalyze.js";
 import { isBullishEngulfing, isBearishEngulfing, isBullishHammer, isBearishHammer, isInsideCandle, isBearishHaramiPattern, isBullishHaramiPattern } from "./patterns.js";
-import { placeOrder, monitorOrders ,displayTaskStatus} from "./trade.js";
+import { placeOrder, monitorOrders } from "./trade.js";
 import { binance } from "./binanceClient.js";
 
 import { SYMBOL, AMOUNT, FIXED_RISK_AMOUNT , LEVERAGE,BIGGER_TIMEFRAME} from "./config.js";
 import { getQuantity ,getSupportAndResistanceZones,validateTradeConditionBearish,validateTradeConditionBullish,findSwings} from "./utils.js";
-import  { initWebSocket, getCurrentPrice, onPriceUpdate, closeWebSocket }  from  "./websocket.js"
+import  { initWebSocket, getCurrentPrice, osnPriceUpdate, closeWebSocket }  from  "./websocket.js"
 let trade = false;
 let Ratio = 2.8
 let high=null;let low=null;
@@ -133,7 +133,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
                 fallbackTradeActive =true
                 patterns.push(patternType)
                let  outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,stopLossPrice,'buy',quantity,tradeId,patternType);
-               displayTaskStatus();
+     
                totalTrades++;
                if (outcome[0] === "profit") {
                 tradeCompletedAt = Date.now();
@@ -180,9 +180,9 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
 
         fallbackTradeActive =true
         patterns.push(patternType)
-        let outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,high,'sell',quantity,tradeId,pattern);
+        let outcome = await monitorOrders(SYMBOL, stopLossOrder.id, takeProfitOrder.id,price,high,'sell',quantity,tradeId,patternType);
         totalTrades++;
-        displayTaskStatus();
+        
         if (outcome[0] === "profit") {
             tradeCompletedAt = Date.now();
             console.log(`profit -price ->${currentPrice} ${typeof currentPrice}  outcome1- ${outcome[1]}  ${typeof outcome[1]}`);
