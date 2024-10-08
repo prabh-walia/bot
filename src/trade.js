@@ -113,14 +113,15 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                         if ((currentPrice < entry - (Loss * 1.095)) ) {
                             if(secondLossAdjusted == false && currentPrice < entry - (Loss * 1.68) && stopLossAdjusted == true){
                                 console.log('Price reached 1.8x of loss. Adjusting stop loss again...');
-      
+                              
+
                                 await binance.cancelOrder(stopLossOrderId, symbol);
                                
                                 console.log('Second stop loss order cancelled');
 
                                 const newStopLossPrice = entry + (Loss * 0.05); // Adjusted to 20% more near
                                 const slSide = 'buy';
-
+                                console.log(`Entry: ${entry}, Loss: ${Loss}, New Stop Loss Price: ${newStopLossPrice}, Current Price: ${currentPrice}`);
                                 const newStopLossOrder = await binance.createOrder(symbol, 'STOP_MARKET', slSide, amount, undefined, {
                                     'stopPrice': newStopLossPrice
                                 });
@@ -139,7 +140,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
     
                                 const newStopLossPrice = entry + (Loss * 0.25);
                                 const slSide = 'buy';
-    
+                                console.log(`Entry: ${entry}, Loss: ${Loss}, New Stop Loss Price: ${newStopLossPrice}, Current Price: ${currentPrice}`);
                                 const newStopLossOrder = await binance.createOrder(symbol, 'STOP_MARKET', slSide, amount, undefined, {
                                     'stopPrice': newStopLossPrice
                                 });
@@ -160,7 +161,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                               
                                 const newStopLossPrice = entry - (Loss * 0.05); // Adjusted to 20% more near
                                 const slSide = 'sell';
-    
+                                console.log(`Entry: ${entry}, Loss: ${Loss}, New Stop Loss Price: ${newStopLossPrice}, Current Price: ${currentPrice}`);
                                 const newStopLossOrder = await binance.createOrder(symbol, 'STOP_MARKET', slSide, amount, undefined, {
                                     'stopPrice': newStopLossPrice
                                 });
@@ -177,7 +178,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                                
                                 const newStopLossPrice = entry - (Loss * 0.25);
                                 const slSide = 'sell';
-    
+                                console.log(`Entry: ${entry}, Loss: ${Loss}, New Stop Loss Price: ${newStopLossPrice}, Current Price: ${currentPrice}`);
                                 const newStopLossOrder = await binance.createOrder(symbol, 'STOP_MARKET', slSide, amount, undefined, {
                                     'stopPrice': newStopLossPrice
                                 });
@@ -190,7 +191,7 @@ export const monitorOrders = async (symbol, stopLossOrderId, takeProfitOrderId, 
                         }
                     }
 
-                    break; // Exit retry loop if successful
+                    break;
                 } catch (error) {
                     if (i < retries - 1) {
                         console.warn(`Retry ${i + 1} for monitoring orders failed:`, error.message);
