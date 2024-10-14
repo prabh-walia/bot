@@ -92,10 +92,10 @@ export const checkSidewaysTrend = async (ohlcv) => {
     // Calculate the difference
     const difference = averageHigh - averageLow;
 
-    // Calculate 0.6% of the average high
-    const threshold = averageHigh * 0.003;
+  
+    const threshold = averageHigh * 0.01;
 
-    // Check if the difference is less than 0.6%
+
     return difference < threshold;
 };
 export const checkFrequentSideways=(ohlcv)=>{
@@ -105,7 +105,7 @@ export const checkFrequentSideways=(ohlcv)=>{
     const difference = averageHigh - averageLow;
 
     // Calculate 0.6% of the average high
-    const threshold = averageHigh * 0.0025;
+    const threshold = averageHigh * 0.0075;
 
     // Check if the difference is less than 0.6%
     return difference < threshold;

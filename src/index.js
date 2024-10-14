@@ -288,36 +288,41 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
             }
             console.log("EMA->",ema200);
             console.log("amc=", ema200*0.977)
-            if(price>ema200*1.021){
-                if(price>ema200*1.062 && (checkUpTrend(ohlcv_B)||checkSidewaysTrend(ohlcv_B) )){
+            if(price>ema200*1.045){
+                if(price>ema200*1.11 && (checkUpTrend(ohlcv_B)||checkSidewaysTrend(ohlcv_B) )){
                 trend="bearish"
                 console.log("  bearished 3%");
                 }
-                else  {
+                else if(checkSidewaysTrend(ohlcv_B))  {
                
                     trend = "bullish"
                     console.log("  bullished");
+                }else {
+                    trend ="neutral"
                 }
                 neutral=false
            
             }
 
-            else if(price < ema200*0.98 ){
-               if(price < ema200*0.946 && (checkDownTrend(ohlcv_B)|| checkSidewaysTrend(ohlcv_B))){
+            else if(price < ema200*0.95 ){
+               if(price < ema200*0.906 && (checkDownTrend(ohlcv_B)|| checkSidewaysTrend(ohlcv_B))){
                    trend = "bullish"
                    console.log("  bullished 3%");
               
                }
-               else {
+               else if(checkSidewaysTrend(ohlcv_B)) {
                   trend = "bearish"
                   console.log("  bearished");
 
+               }
+               else {
+                trend = "neutral"
                }
                neutral=false
                 
             }
         
-                    const priceWithinRange = price >= ema200 * 0.982 && price <= ema200 * 1.018;
+                    const priceWithinRange = price >= ema200 * 0.952 && price <= ema200 * 1.048;
 
                         console.log("Trend ->",trend)
    
@@ -347,11 +352,11 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
 
                        }
                        else {
-                      if(checkUpTrend(ohlcv_B)){
-                        trend = "bearish"
+                      if(checkUpTrend(ohlcv_B)|| checkFrequentSideways(ohlcv_B)){
+                        trend = "bullish"
                       }
                       else if(checkDownTrend(ohlcv_B)){
-                        trend = "bullish"
+                        trend = "bearish"
                       }
                       
                    
@@ -410,7 +415,7 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
            if(neutral){
               ratio = 1.9
            }else {
-            ratio = priceWithinRange ? 3.3 : 2.4;
+            ratio = priceWithinRange ? 3.5 : 2.4;
            }
              BullishValidated=true
              console.log("pattern -r", patternType)
@@ -424,7 +429,7 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.3 : 2.4;
+              ratio = priceWithinRange ? 3.5 : 2.5;
              }
             console.log("hammer");
              BullishValidated=true
@@ -441,7 +446,7 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
            if(neutral){
               ratio = 1.9
            }else {
-            ratio = priceWithinRange ? 3.4 : 2.4;
+            ratio = priceWithinRange ? 3.4 : 2.5;
            }
            console.log("harami");
              BullishValidated=true
@@ -475,7 +480,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.2 : 2.4;
+              ratio = priceWithinRange ? 3.4 : 2.6;
              }
              console.log("pattern -r", patternType)
             BearishValidated = true;
@@ -489,7 +494,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.2 : 2.4;
+              ratio = priceWithinRange ? 3.4 : 2.6;
              }
   
             BearishValidated = true;
@@ -506,7 +511,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             if(neutral){
                 ratio = 1.9
              }else {
-              ratio = priceWithinRange ? 3.2 : 2.4;
+              ratio = priceWithinRange ? 3.4 : 2.6;
              }
             console.log("pattern -r", patternType)
             BearishValidated = true;
