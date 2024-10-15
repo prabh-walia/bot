@@ -21,33 +21,33 @@ export const getQuantity = (candleSizePercent) => {
     const maxFeePercentage = 10; // Maximum allowed fee percentage of profits
 
     // For large candles, we want smaller quantities
-    if (candleSizePercent > 0.8) {
+    if (candleSizePercent > 1.2) {
         return 0; // No trade for candle sizes above 0.9%
     }
 
     // Calculate the potential profit (for example, 2.5x the candle size)
-    const potentialProfitPercent = candleSizePercent * 2.5; // Expected profit based on candle size
+    // const potentialProfitPercent = candleSizePercent * 2.5; // Expected profit based on candle size
 
-    // Calculate the fee amount
-    const feeAmount = (feePercent / 100) * baseQuantity; // Fee based on quantity
+    // // Calculate the fee amount
+    // const feeAmount = (feePercent / 100) * baseQuantity; // Fee based on quantity
 
-    // Ensure the fee is no more than 10% of the potential profit
-    if (feeAmount > (maxFeePercentage / 100) * potentialProfitPercent) {
-        return 0; // Skip trade if the fee would take more than 10% of the profit
-    }
+    // // Ensure the fee is no more than 10% of the potential profit
+    // if (feeAmount > (maxFeePercentage / 100) * potentialProfitPercent) {
+    //     return 0; // Skip trade if the fee would take more than 10% of the profit
+    // }
 
-    // Calculate the quantity, inversely proportional to the candle size, but limited
-    const calculatedQuantity = (0.1 / candleSizePercent) * baseQuantity;
+    // // Calculate the quantity, inversely proportional to the candle size, but limited
+    // const calculatedQuantity = (0.1 / candleSizePercent) * baseQuantity;
 
-    // Round the quantity to the nearest multiple of 0.001 (since 0.001 is the minimum lot size)
-    const roundedQuantity = Math.round(calculatedQuantity * 1000) / 1000;
+    // // Round the quantity to the nearest multiple of 0.001 (since 0.001 is the minimum lot size)
+    // const roundedQuantity = Math.round(calculatedQuantity * 1000) / 1000;
 
-    // Ensure the rounded quantity is not smaller than 0.001 (minimum lot size)
-    if (roundedQuantity < 0.001) {
-        return 0.001;
-    }
+    // // Ensure the rounded quantity is not smaller than 0.001 (minimum lot size)
+    // if (roundedQuantity < 0.001) {
+    //     return 0.001;
+    // }
 
-    return roundedQuantity;
+    return 0.003;
 };
 // Function to find recent support and resistance levels
 export  function findSwings(ohlcv, length) {
