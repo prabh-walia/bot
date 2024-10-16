@@ -138,8 +138,8 @@ export function validateTradeConditionBullish(price, supportLevels) {
         const supportPrice = support.price;
     
         // Calculate the thresholds (0.1% below and above the support price)
-        const lowerThreshold = supportPrice * 0.996; 
-        const upperThreshold = supportPrice * 1.004; 
+        const lowerThreshold = supportPrice * 0.98; 
+        const upperThreshold = supportPrice * 1.02; 
     
         // Check if the price is within the range between the lower and upper thresholds
         if (price >= lowerThreshold && price <= upperThreshold) {
