@@ -436,7 +436,7 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
              console.log("pattern -r", patternType)
             return { stopLossPrice,  ratio ,patternType};
         } 
-        else if(isBullishHaramiPattern(lastCandle,prevCandle) && (validateTradeConditionBullish(price,zones.support)|| checkSidewaysTrend(ohlcv))){
+        else if(isBullishHaramiPattern(lastCandle,prevCandle) && (validateTradeConditionBullish(price,zones.support))){
             patternType = "harami";
             stopLossPrice = prevCandle[3];
             high = Math.min(lastCandle[2], prevCandle[2]);
@@ -501,7 +501,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
             console.log("pattern -r", patternType)
             return { stopLossPrice, ratio,patternType };
         } 
-        else if(isBearishHaramiPattern(lastCandle,prevCandle) && (validateTradeConditionBearish(price, zones.resistance)|| checkSidewaysTrend(ohlcv))){
+        else if(isBearishHaramiPattern(lastCandle,prevCandle) && (validateTradeConditionBearish(price, zones.resistance))){
             patternType = "harami";
             stopLossPrice = Math.max(prevCandle[2],lastCandle[2]);
             low = Math.max(lastCandle[3], prevCandle[3]);
