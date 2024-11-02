@@ -116,7 +116,11 @@ const tracker=()=>{
 
 
 const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
-    console.log("inside trade executor");
+    console.log("inside trade executor"); 
+    if (stopLossPrice == null || isNaN(stopLossPrice)) {
+        throw new Error(`Invalid stopLossPrice: Stop loss price is required and must be a number. coming from trade exector sl->${stopLossPrice} `);
+    }
+    
   while(trade==false){
    if(isBullishTrade ){
 
@@ -334,7 +338,13 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
                             if(patternFound && tradeExecutionOpen==false){
                                 console.log(" going to run trade executer")
                                 tradeExecutionOpen= true
-                                 TradeExecutor(stopLossPrice,ratio,patternType)
+                               if(stopLossPrice)
+                                {
+                                    TradeExecutor(stopLossPrice,ratio,patternType)
+                                } 
+                                else {
+                                    tradeExecutionOpen= false
+                                }
                             }
 
                         }
@@ -346,7 +356,13 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
 
                         if(patternFound && tradeExecutionOpen==false){
                             tradeExecutionOpen= true
-                             TradeExecutor(stopLossPrice,ratio,patternType)
+                            if(stopLossPrice)
+                                {
+                                    TradeExecutor(stopLossPrice,ratio,patternType)
+                                } 
+                                else {
+                                    tradeExecutionOpen= false
+                                }
                         }
 
 

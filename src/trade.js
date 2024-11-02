@@ -6,7 +6,18 @@ import Trade from "./model.js";
 
 
 export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfitPrice,pattern) => {
-    console.log("take prfit price -",takeProfitPrice);
+
+    if (stopLossPrice == null || isNaN(stopLossPrice)) {
+        throw new Error(`Invalid stopLossPrice: Stop loss price is required and must be a number. coming from placeorder sl->${stopLossPrice} `);
+    }
+
+    // Check if takeProfitPrice is valid
+    if (takeProfitPrice == null || isNaN(takeProfitPrice)) {
+        throw new Error("Invalid takeProfitPrice: Take profit price is required and must be a number.");
+    }
+    console.log("Stop Loss Price:", stopLossPrice);
+    console.log("Take Profit Price:", takeProfitPrice);
+    console.log("Pattern:", pattern);
     const currentPrice = parseFloat(getCurrentPrice());
 
    console.log("pattern->",pattern)
@@ -34,8 +45,9 @@ export const placeOrder = async (symbol, side, amount, stopLossPrice, takeProfit
         });
     
 
-        console.log('Stop loss order created'); 
+        console.log('Stop loss order created', stopLossOrder); 
 
+     
         // Place take profit order
         const takeProfitOrder = await binance.createOrder(symbol, 'TAKE_PROFIT_MARKET', slSide, amount, undefined, {
             'stopPrice': takeProfitPrice
