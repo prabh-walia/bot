@@ -117,7 +117,7 @@ export const  fetchAndAnalyzeBiggerFrame= async (timeframe)=>{
         const ohlcv_B = await binance.fetchOHLCV(SYMBOL, timeframe, undefined, LIMIT);
         const closingPrices = ohlcv_B.map(entry => entry[4]);
         let ema200 = calculate200EMA(closingPrices);
-        ema200=ema200+400
+        ema200=ema200+300
          
         return { ema200,ohlcv_B };
     } catch (error) {
