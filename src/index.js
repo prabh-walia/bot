@@ -292,41 +292,37 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
             }
             console.log("EMA->",ema200);
             console.log("amc=", ema200*0.977)
-            if(price>ema200*1.045){
-                if(price>ema200*1.11 && (checkUpTrend(ohlcv_B)||checkSidewaysTrend(ohlcv_B) )){
-                trend="bearish"
+            if(price>ema200*1.035){
+                if(price>ema200*1.12 && (checkUpTrend(ohlcv_B))){
+                trend="neutral"
                 console.log("  bearished 3%");
                 }
-                else if(checkSidewaysTrend(ohlcv_B))  {
-               
+       
+                else {
                     trend = "bullish"
                     console.log("  bullished");
-                }else {
-                    trend ="neutral"
                 }
                 neutral=false
            
             }
 
-            else if(price < ema200*0.95 ){
-               if(price < ema200*0.906 && (checkDownTrend(ohlcv_B)|| checkSidewaysTrend(ohlcv_B))){
-                   trend = "bullish"
+            else if(price < ema200*0.965 ){
+               if(price < ema200*0.916 && (checkDownTrend(ohlcv_B))){
+                   trend = "neutral"
                    console.log("  bullished 3%");
               
                }
-               else if(checkSidewaysTrend(ohlcv_B)) {
+               else {
                   trend = "bearish"
                   console.log("  bearished");
 
                }
-               else {
-                trend = "neutral"
-               }
+             
                neutral=false
                 
             }
         
-                    const priceWithinRange = price >= ema200 * 0.952 && price <= ema200 * 1.048;
+                    const priceWithinRange = price >= ema200 * 0.942 && price <= ema200 * 1.058;
 
                         console.log("Trend ->",trend)
    
@@ -421,7 +417,7 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
     if (isBullishHammer(lastCandle, prevCandle, secondLastCandle) || isBullishEngulfing(lastCandle, prevCandle)|| isBullishHaramiPattern(lastCandle,prevCandle)) {
         console.log("Validated candle");
 
-        if (isBullishEngulfing(lastCandle, prevCandle)  && (validateTradeConditionBullish(price,zones.support)|| checkSidewaysTrend(ohlcv))) {
+        if (isBullishEngulfing(lastCandle, prevCandle)  && (validateTradeConditionBullish(price,zones.support)|| checkFrequentSideways(ohlcv))) {
             patternType = "engulfing";
             stopLossPrice = prevCandle[3];
             high = Math.max(lastCandle[2], prevCandle[2]);
@@ -436,7 +432,7 @@ const determineBullishTradeParameters = (lastCandle, prevCandle,secondLastCandle
              BullishValidated=true
              console.log("pattern -r", patternType)
             return { stopLossPrice, ratio , patternType }
-        } else if (isBullishHammer(lastCandle, prevCandle, secondLastCandle) && validateTradeConditionBullish(price,zones.support)&& checkFrequentSideways(ohlcv)) {
+        } else if (isBullishHammer(lastCandle, prevCandle, secondLastCandle) && (validateTradeConditionBullish(price,zones.support)||checkFrequentSideways(ohlcv))) {
             patternType = "Hammer";
             stopLossPrice = lastCandle[3];
             high = lastCandle[2];
@@ -486,7 +482,7 @@ const determineBearishTradeParameters = (lastCandle, prevCandle,secondLastCandle
     if (isBearishEngulfing(lastCandle, prevCandle) || isBearishHammer(lastCandle, prevCandle,secondLastCandle) || isBearishHaramiPattern(lastCandle,prevCandle)) {
         console.log("Validated candle");
 
-        if (isBearishEngulfing(lastCandle, prevCandle ) && ( validateTradeConditionBearish(price, zones.resistance)|| checkSidewaysTrend(ohlcv))) {
+        if (isBearishEngulfing(lastCandle, prevCandle ) && ( validateTradeConditionBearish(price, zones.resistance)|| checkFrequentSideways(ohlcv))) {
             patternType = "engulfing";
             stopLossPrice = prevCandle[2];
             low = Math.min(lastCandle[3], prevCandle[3]);

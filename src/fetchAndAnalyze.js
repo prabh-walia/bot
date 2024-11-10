@@ -45,7 +45,7 @@ const calculateAverage = (data) => {
     const avgPrev20 = calculateAverage(prev20ClosingPrices);
 
     // Compare averages
-    if (avgLast20 < avgPrev20) {
+    if ((avgLast20*1.2) < avgPrev20) {
         console.log("down")
        return true
     } 
@@ -70,7 +70,7 @@ export const checkUpTrend = async (ohlcv) => {
     const avgPrev20 = calculateAverage(prev20ClosingPrices);
 
     // Compare averages
-    if (avgLast20 > avgPrev20) {
+    if (avgLast20 > avgPrev20*1.2) {
         console.log("uupside")
        return true
     } 
@@ -117,7 +117,7 @@ export const  fetchAndAnalyzeBiggerFrame= async (timeframe)=>{
         const ohlcv_B = await binance.fetchOHLCV(SYMBOL, timeframe, undefined, LIMIT);
         const closingPrices = ohlcv_B.map(entry => entry[4]);
         let ema200 = calculate200EMA(closingPrices);
-        ema200=ema200+200
+        ema200=ema200+400
          
         return { ema200,ohlcv_B };
     } catch (error) {
