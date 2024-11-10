@@ -297,7 +297,9 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
                 trend="neutral"
                 console.log("  bearished 3%");
                 }
-       
+               else if (checkFrequentSideways(ohlcv_B)){
+                trend = 'bearish'
+               }
                 else {
                     trend = "bullish"
                     console.log("  bullished");
@@ -311,6 +313,10 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
                    trend = "neutral"
                    console.log("  bullished 3%");
               
+               }
+
+               else if (checkFrequentSideways(ohlcv_B)){
+                trend = 'bullish'
                }
                else {
                   trend = "bearish"
