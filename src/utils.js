@@ -21,7 +21,7 @@ export const getQuantity = (candleSizePercent) => {
     const maxFeePercentage = 10; // Maximum allowed fee percentage of profits
 
     // For large candles, we want smaller quantities
-    if (candleSizePercent > 1.2) {
+    if (candleSizePercent > 1.5) {
         return 0; // No trade for candle sizes above 0.9%
     }
 
@@ -47,7 +47,7 @@ export const getQuantity = (candleSizePercent) => {
     //     return 0.001;
     // }
 
-    return 0.003;
+    return 0.004;
 };
 // Function to find recent support and resistance levels
 export  function findSwings(ohlcv, length) {
