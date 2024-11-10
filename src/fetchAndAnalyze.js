@@ -14,10 +14,10 @@ export const fetchAndAnalyzeCandles = async () => {
 
         const ohlcv = await binance.fetchOHLCV(SYMBOL, TIMEFRAME, undefined, LIMIT);
         const closingPrices = ohlcv.map(entry => entry[4]);
-        const ema200 = calculate200EMA(closingPrices);
+        const ema = calculate200EMA(closingPrices);
 
            console.log("YS CURRENT PRICE IS THIS ->", getCurrentPrice());
-        return {  ohlcv, ema200 };
+        return {  ohlcv, ema};
     } catch (error) {
         console.error("Error fetching and analyzing candles:", error);
     }
@@ -117,7 +117,7 @@ export const  fetchAndAnalyzeBiggerFrame= async (timeframe)=>{
         const ohlcv_B = await binance.fetchOHLCV(SYMBOL, timeframe, undefined, LIMIT);
         const closingPrices = ohlcv_B.map(entry => entry[4]);
         let ema200 = calculate200EMA(closingPrices);
-        ema200=ema200+300
+        ema200=ema200+200
          
         return { ema200,ohlcv_B };
     } catch (error) {
