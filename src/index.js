@@ -293,7 +293,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
             console.log("EMA->",ema200);
             console.log("amc=", ema200*0.977)
             if(price>ema200*1.035){
-                if(price>ema200*1.12 && (checkUpTrend(ohlcv_B))){
+                if(price>ema200*1.11 && (checkUpTrend(ohlcv_B))){
                 trend="neutral"
                 console.log("  bearished 3%");
                 }
@@ -322,7 +322,7 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
                 
             }
         
-                    const priceWithinRange = price >= ema200 * 0.942 && price <= ema200 * 1.058;
+                    const priceWithinRange = price >= ema200 * 0.952 && price <= ema200 * 1.048;
 
                         console.log("Trend ->",trend)
    

@@ -6,7 +6,7 @@ export const LIMIT = 200;
 export const LEVERAGE =2;
 export const Ratio = 3
 export const AMOUNT =30
-export const BIGGER_TIMEFRAME = '8h'
+export const BIGGER_TIMEFRAME = '4h'
 export const FIXED_RISK_AMOUNT = 0.04
 
 
