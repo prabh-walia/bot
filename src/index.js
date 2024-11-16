@@ -296,10 +296,11 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
                 if(price>ema200*1.11 && (checkUpTrend(ohlcv_B))){
                 trend="neutral"
                 console.log("  bearished 3%");
+                   if (checkFrequentSideways(ohlcv_B)){
+                    trend = 'bearish'
+                   }
                 }
-               else if (checkFrequentSideways(ohlcv_B)){
-                trend = 'bearish'
-               }
+             
                 else {
                     trend = "bullish"
                     console.log("  bullished");
@@ -312,12 +313,12 @@ const TradeExecutor = async (stopLossPrice,Ratio,patternType)=>{
                if(price < ema200*0.916 && (checkDownTrend(ohlcv_B))){
                    trend = "neutral"
                    console.log("  bullished 3%");
-              
+                   if (checkFrequentSideways(ohlcv_B)){
+                    trend = 'bullish'
+                   }
                }
 
-               else if (checkFrequentSideways(ohlcv_B)){
-                trend = 'bullish'
-               }
+               
                else {
                   trend = "bearish"
                   console.log("  bearished");
