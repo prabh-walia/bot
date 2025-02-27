@@ -1,0 +1,14 @@
+
+1 : running or stop status - get status from database to start or stop bot.
+2 : trend status - get trend status from database to have bias continously after every 30 min
+3 : fetching data - get previous candles data  from api
+4 : Find Accumulation zone - find accumulation zone from previous candles data 
+5 : Place open orders - Place open orders in accumulation zone, 2 orders within zone and one slightly outside the zone 
+// after order hit 
+6 : Find Stop loss zone - find stop loss zone 
+7 : place stop loss orders - place stop loss orders in stop loss zone with 3 orders in equal range.
+// If stop loss didnt hit 
+8 : Start alert system - if Trade goes in profit in 1:1.5 ratio from stop loss avergae price then start alert system
+//  alert system ->  its technique to track profit. like after alert system start it will track price as each candle not closing below 12 ema it will not generate alert , as one candle appear closing below 12ema it will generate first alert but it will not exit the trade. it is the alert which tells bot to book 30% profit if price again go above or near recent high.then it will look for second alert , after second alert it will again book 40% profit on near previous high. and then next time it hit 12 ema it will close remaining position
+
+9 : emergency Status ->  fetching emergency status from DATABASE  .which is status to know there is emergency or not. if emergency status is true then bot will not use ALERT SYSTEM during profit zone  it will be very strict . it will close full position as it close below 12 ema. that status can be changed by administrator of Db.
