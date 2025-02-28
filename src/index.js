@@ -535,7 +535,7 @@ const goToSmallerFrame = async (type) => {
 
     const open = lastCandle[1];
     const close = lastCandle[4];
-    const percentMove = close * 0.015; // 0.6% move range
+    const percentMove = close * 0.01; // 0.6% move range
 
     const steps = [0.3, 0.7];
     let orderPrices = [];
@@ -604,7 +604,7 @@ const getOrderPrices = async (type, lastCandle) => {
     const high = lastCandle[2]; // High price
     const low = lastCandle[3]; // Low price
     const halfway = (high + low) / 2; // Mid price of the candle
-    const percentMove = halfway * 0.02; // 0.8% move range
+    const percentMove = halfway * 0.012; // 0.8% move range
 
     // Define percentage step distribution (closer to halfway at first)
     const steps = [0.4, 0.8]; // First price closer, last price at full move
@@ -649,8 +649,8 @@ const getOrderPrices = async (type, lastCandle) => {
 };
 
 const placeLimitOrders = async (prices, type) => {
-  const amount = 10; // Order quantity
-  const stopLossPercentage = 0.025; // 0.5% SL
+  const amount = 1; // Order quantity
+  const stopLossPercentage = 0.015; // 0.5% SL
   let orderResults = [];
 
   try {
@@ -813,7 +813,7 @@ const manageOpenPositions = async () => {
         `📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
       );
 
-      const risk = entryPrice * 0.025;
+      const risk = entryPrice * 0.015;
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 1.5 : entryPrice - risk * 1.5;
       const finalExitTrigger =
@@ -904,8 +904,8 @@ const manageOpenPositions = async () => {
 
           if (
             alertStatus[positionKey].second &&
-            ((side === "buy" && price >= recentHigh * 0.99) ||
-              (side === "sell" && price <= recentLow * 1.01))
+            ((side === "buy" && price >= recentHigh * 0.95) ||
+              (side === "sell" && price <= recentLow * 1.05))
           ) {
             console.log("📈 Booking 40% Profit at near previous level...");
             await binance.createOrder(
