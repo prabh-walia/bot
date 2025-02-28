@@ -800,6 +800,7 @@ const manageOpenPositions = async () => {
       console.log("position>", position);
       if (!position) {
         console.log("⚠️ No open positions. Stopping monitoring.");
+        ordersPending = false;
         return; // Exit function if no positions are open
       }
 
