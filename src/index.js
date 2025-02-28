@@ -318,7 +318,7 @@ const findTrades = async () => {
         continue;
       }
 
-      if (Date.now() - tradeCompletedAt < 10 * 60 * 1000) {
+      if (Date.now() - tradeCompletedAt < 100 * 60 * 1000) {
         console.log("Within the 10-minute cooldown period, waiting...");
         await new Promise((resolve) => setTimeout(resolve, 1000));
         continue;
@@ -347,9 +347,6 @@ const findTrades = async () => {
       const pivotLows = findPivotLows(lows, leftLen, rightLen);
       const last2PivotHighs = pivotHighs.slice(-2);
       const last2PivotLows = pivotLows.slice(-2);
-
-      console.log("Last 2 Pivot Highs:", last2PivotHighs);
-      console.log("Last 2 Pivot Lows:", last2PivotLows);
 
       // const response = checkBullishPatternAboveEma(filteredSwings);
       // if (response.patternMatched) {
@@ -538,9 +535,9 @@ const goToSmallerFrame = async (type) => {
 
     const open = lastCandle[1];
     const close = lastCandle[4];
-    const percentMove = close * 0.008; // 0.6% move range
+    const percentMove = close * 0.015; // 0.6% move range
 
-    const steps = [0.4, 0.9];
+    const steps = [0.3, 0.7];
     let orderPrices = [];
 
     if (type === "bullish") {
@@ -607,7 +604,7 @@ const getOrderPrices = async (type, lastCandle) => {
     const high = lastCandle[2]; // High price
     const low = lastCandle[3]; // Low price
     const halfway = (high + low) / 2; // Mid price of the candle
-    const percentMove = halfway * 0.01; // 0.8% move range
+    const percentMove = halfway * 0.02; // 0.8% move range
 
     // Define percentage step distribution (closer to halfway at first)
     const steps = [0.4, 0.8]; // First price closer, last price at full move
@@ -653,7 +650,7 @@ const getOrderPrices = async (type, lastCandle) => {
 
 const placeLimitOrders = async (prices, type) => {
   const amount = 10; // Order quantity
-  const stopLossPercentage = 0.005; // 0.5% SL
+  const stopLossPercentage = 0.025; // 0.5% SL
   let orderResults = [];
 
   try {
@@ -815,7 +812,7 @@ const manageOpenPositions = async () => {
         `📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
       );
 
-      const risk = entryPrice * 0.005;
+      const risk = entryPrice * 0.025;
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 1.5 : entryPrice - risk * 1.5;
       const finalExitTrigger =
