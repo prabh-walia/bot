@@ -56,6 +56,7 @@ let BullishValidated = false;
 let BearishValidated = false;
 let patterns = [];
 let SYMBOL;
+let orderQuantity;
 let multiple;
 let slPercentage;
 let BullishPatternFound = false;
@@ -478,7 +479,7 @@ const main = async () => {
     multiple = status.orderMultiple;
 
     console.log("symbol is ->", SYMBOL);
-    const orderQuantity = MIN_ORDER_QUANTITY[SYMBOL] || 1;
+    orderQuantity = MIN_ORDER_QUANTITY[SYMBOL] || 1;
     const timeframe = status.trendStatus?.sourceTimeframe;
     slPercentage = SL_PERCENTAGE[timeframe] || 0.014;
 
