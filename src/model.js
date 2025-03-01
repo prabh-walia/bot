@@ -30,6 +30,7 @@ const statusSchema = new Schema({
     lowerEMA: Number,
   },
   symbol: String,
+  orderMultiple: Number,
   emergencyStatus: Boolean,
   lastEmergencyChange: Date,
 });

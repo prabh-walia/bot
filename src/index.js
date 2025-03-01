@@ -56,6 +56,8 @@ let BullishValidated = false;
 let BearishValidated = false;
 let patterns = [];
 let SYMBOL;
+let multiple;
+let slPercentage;
 let BullishPatternFound = false;
 let BearishPatternFound = false;
 let patternType;
@@ -455,14 +457,33 @@ const findTrades = async () => {
     }
   }
 };
+const MIN_ORDER_QUANTITY = {
+  "SOL/USDT": 1,
+  "LTC/USDT": 0.17,
+  "XRP/USDT": 3,
+  "SUI/USDT": 3,
+};
+const SL_PERCENTAGE = {
+  "1h": 0.014,
+  "30m": 0.007,
+  "2h": 0.02,
+  "4h": 0.03,
+};
 
 const main = async () => {
   try {
     const status = await Status.findOne();
 
     SYMBOL = convertSymbol(status.symbol);
+    multiple = status.orderMultiple;
 
     console.log("symbol is ->", SYMBOL);
+    const orderQuantity = MIN_ORDER_QUANTITY[SYMBOL] || 1;
+    const timeframe = status.trendStatus?.sourceTimeframe;
+    slPercentage = SL_PERCENTAGE[timeframe] || 0.014;
+
+    console.log("minimum Quantity->", orderQuantity);
+    console.log("multiple ->", multiple);
     if (!status) {
       console.log("Status document not found!");
       return;
@@ -649,8 +670,8 @@ const getOrderPrices = async (type, lastCandle) => {
 };
 
 const placeLimitOrders = async (prices, type) => {
-  const amount = 1; // Order quantity
-  const stopLossPercentage = 0.015; // 0.5% SL
+  const amount = orderQuantity * multiple * 1.1; // Order quantity
+  const stopLossPercentage = slPercentage;
   let orderResults = [];
 
   try {
