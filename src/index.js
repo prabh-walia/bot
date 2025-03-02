@@ -378,7 +378,16 @@ const findTrades = async () => {
           goToSmallerFrame("bullish");
         } else if (result.isBullish) {
           console.log("last candle is not bullish or not above");
-          getOrderPrices("bullish", lastCandle);
+          const closingPrices = ohlcv.map((candle) => candle[4]);
+          const latestRSI20 = calculateRSI20(closingPrices);
+
+          console.log(`📊 Latest RSI-20: ${latestRSI20}`);
+
+          if (latestRSI20 < 40) {
+            getOrderPrices("bullish", lastCandle);
+          } else {
+            console.log("❌ RSI is not below 40. No order placement.");
+          }
         } else {
           console.log("last candle is not bullish");
         }
@@ -411,7 +420,14 @@ const findTrades = async () => {
           goToSmallerFrame("bearish");
         } else if (result.isBearish) {
           console.log("last candle is not bearish or not below");
-          getOrderPrices("bearish", lastCandle);
+          const closingPrices = ohlcv.map((candle) => candle[4]);
+          const latestRSI20 = calculateRSI20(closingPrices);
+          console.log("rsi ->", latestRSI20);
+          if (latestRSI20 > 60) {
+            getOrderPrices("bearish", lastCandle);
+          } else {
+            console.log("rsi is not above 60");
+          }
         } else {
           console.log("last candle is not beairhs");
         }
@@ -460,12 +476,12 @@ const findTrades = async () => {
 };
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
-  "LTC/USDT": 0.17,
+  "LTC/USDT": 0.16,
   "XRP/USDT": 3,
   "SUI/USDT": 3,
 };
 const SL_PERCENTAGE = {
-  "1h": 0.014,
+  "1h": 0.012,
   "30m": 0.007,
   "2h": 0.02,
   "4h": 0.03,
@@ -558,7 +574,7 @@ const goToSmallerFrame = async (type) => {
 
     const open = lastCandle[1];
     const close = lastCandle[4];
-    const percentMove = close * 0.01; // 0.6% move range
+    const percentMove = close * 0.008; // 0.6% move range
 
     const steps = [0.3, 0.7];
     let orderPrices = [];
@@ -627,10 +643,10 @@ const getOrderPrices = async (type, lastCandle) => {
     const high = lastCandle[2]; // High price
     const low = lastCandle[3]; // Low price
     const halfway = (high + low) / 2; // Mid price of the candle
-    const percentMove = halfway * 0.012; // 0.8% move range
+    const percentMove = halfway * 0.015; // 0.8% move range
 
     // Define percentage step distribution (closer to halfway at first)
-    const steps = [0.4, 0.8]; // First price closer, last price at full move
+    const steps = [0.6, 0.8]; // First price closer, last price at full move
     let orderPrices = [];
 
     if (type === "bullish") {
@@ -1086,10 +1102,10 @@ const cancelAllOpenOrders = async () => {
     await Promise.all(
       openOrders.map((order) =>
         binance
-          .cancelOrder(order.id, SYMBOL)
+          .cancelOrder(order.info.orderId, SYMBOL)
           .then(() =>
             console.log(
-              `❌ Cancelled Order ${order.id} at ${order.price} for ${SYMBOL}`
+              `❌ Cancelled Order ${order.info.orderId} at ${order.info.price} for ${SYMBOL}`
             )
           )
       )
@@ -1103,3 +1119,44 @@ const cancelAllOpenOrders = async () => {
     console.error(`❌ Error cancelling orders for ${SYMBOL}:`, err);
   }
 };
+
+function calculateRSI20(closingPrices) {
+  const period = 15; // RSI period
+
+  if (closingPrices.length < period + 1) {
+    throw new Error(
+      `Need at least ${period + 1} closing prices to calculate RSI-20`
+    );
+  }
+
+  // Get last 21 closing prices (to compute RSI-20)
+  const prices = closingPrices.slice(-(period + 1));
+
+  let gains = 0,
+    losses = 0;
+
+  // Calculate gains and losses over the last 20 periods
+  for (let i = 1; i < prices.length; i++) {
+    let change = prices[i] - prices[i - 1];
+
+    if (change > 0) {
+      gains += change;
+    } else {
+      losses += Math.abs(change);
+    }
+  }
+
+  // Compute average gain and loss
+  let avgGain = gains / period;
+  let avgLoss = losses / period;
+
+  // Avoid division by zero
+  if (avgLoss === 0) return 100;
+  if (avgGain === 0) return 0;
+
+  // Compute RSI
+  let RS = avgGain / avgLoss;
+  let RSI = 100 - 100 / (1 + RS);
+
+  return RSI.toFixed(2); // Return the latest RSI rounded to 2 decimal places
+}
