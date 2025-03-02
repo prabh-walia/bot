@@ -776,7 +776,10 @@ const monitorOrderFilling = async () => {
 
     for (let order of openOrders) {
       try {
-        const orderStatus = await binance.fetchOrder(order.orderId, SYMBOL);
+        const orderStatus = await binance.fetchOrder(
+          order.info.orderId,
+          SYMBOL
+        );
         if (orderStatus.info?.status === "FILLED") {
           console.log(
             `🎯 Order FILLED: ${order.info.side.toUpperCase()} at ${
