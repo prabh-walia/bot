@@ -383,7 +383,7 @@ const findTrades = async () => {
 
           console.log(`📊 Latest RSI-20: ${latestRSI20}`);
 
-          if (latestRSI20 < 40) {
+          if (latestRSI20 < 45) {
             getOrderPrices("bullish", lastCandle);
           } else {
             console.log("❌ RSI is not below 40. No order placement.");
@@ -423,7 +423,7 @@ const findTrades = async () => {
           const closingPrices = ohlcv.map((candle) => candle[4]);
           const latestRSI20 = calculateRSI20(closingPrices);
           console.log("rsi ->", latestRSI20);
-          if (latestRSI20 > 60) {
+          if (latestRSI20 > 55) {
             getOrderPrices("bearish", lastCandle);
           } else {
             console.log("rsi is not above 60");
