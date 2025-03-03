@@ -865,7 +865,7 @@ const manageOpenPositions = async () => {
         `📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
       );
 
-      const risk = entryPrice * 0.015;
+      const risk = entryPrice * 0.012;
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
@@ -910,15 +910,28 @@ const manageOpenPositions = async () => {
           side === "buy" ? "sell" : "buy",
           positionSize * 0.3
         );
-        const randomDelay =
-          Math.floor(Math.random() * (3500 - 2500 + 1)) + 2500;
-        await new Promise((resolve) => setTimeout(resolve, randomDelay)); // Small delay to ensure API updates
+
         const updatedPositions = await binance.fetchPositions();
         const updatedPosition = updatedPositions.find(
           (p) =>
             p.info.symbol === SYMBOL.replace("/", "") &&
             parseFloat(p.info.positionAmt) !== 0
         );
+
+        if (!updatedPosition) {
+          console.log(
+            "🚨 Position closed after partial profit booking. Exiting..."
+          );
+          return;
+        }
+
+        positionSize = parseFloat(updatedPosition.info.positionAmt);
+        console.log(`🔄 Updated Position Size: ${positionSize}`);
+        await updateStopLossOrders(positionSize, side);
+
+        const randomDelay =
+          Math.floor(Math.random() * (3500 - 2500 + 1)) + 2500;
+        await new Promise((resolve) => setTimeout(resolve, randomDelay)); // Small delay to ensure API updates
 
         if (!updatedPosition) {
           console.log(
@@ -1035,6 +1048,24 @@ const manageOpenPositions = async () => {
               side === "buy" ? "sell" : "buy",
               positionSize * 0.3
             );
+
+            const updatedPositions = await binance.fetchPositions();
+            const updatedPosition = updatedPositions.find(
+              (p) =>
+                p.info.symbol === SYMBOL.replace("/", "") &&
+                parseFloat(p.info.positionAmt) !== 0
+            );
+
+            if (!updatedPosition) {
+              console.log(
+                "🚨 Position closed after partial profit booking. Exiting..."
+              );
+              return;
+            }
+
+            positionSize = parseFloat(updatedPosition.info.positionAmt);
+            console.log(`🔄 Updated Position Size: ${positionSize}`);
+            await updateStopLossOrders(positionSize, side);
           }
 
           if (
@@ -1061,6 +1092,23 @@ const manageOpenPositions = async () => {
               side === "buy" ? "sell" : "buy",
               positionSize * 0.4
             );
+            const updatedPositions = await binance.fetchPositions();
+            const updatedPosition = updatedPositions.find(
+              (p) =>
+                p.info.symbol === SYMBOL.replace("/", "") &&
+                parseFloat(p.info.positionAmt) !== 0
+            );
+
+            if (!updatedPosition) {
+              console.log(
+                "🚨 Position closed after partial profit booking. Exiting..."
+              );
+              return;
+            }
+
+            positionSize = parseFloat(updatedPosition.info.positionAmt);
+            console.log(`🔄 Updated Position Size: ${positionSize}`);
+            await updateStopLossOrders(positionSize, side);
           }
 
           if (
@@ -1159,4 +1207,55 @@ function calculateRSI20(closingPrices) {
   let RSI = 100 - 100 / (1 + RS);
 
   return RSI.toFixed(2); // Return the latest RSI rounded to 2 decimal places
+}
+
+async function updateStopLossOrders(positionSize, side) {
+  if (positionSize <= 0) {
+    console.log("🚨 No active position left. Skipping stop-loss update...");
+    return;
+  }
+
+  // 🔍 Fetch current stop-market orders
+  const openOrders = await binance.fetchOpenOrders(SYMBOL);
+  const stopOrders = openOrders.filter((order) => order.type === "stop_market");
+
+  // 🛑 Save stop-loss prices before canceling
+  const stopLossPrices = stopOrders.map((order) => parseFloat(order.stopPrice));
+
+  console.log(`🛑 Cancelling ${stopOrders.length} existing stop orders...`);
+  for (let order of stopOrders) {
+    await binance.cancelOrder(order.id, SYMBOL);
+  }
+
+  // ✅ Determine the number of new SL orders (1 less than before)
+  const numNewStopOrders = Math.max(1, stopOrders.length - 1);
+
+  console.log(
+    `📌 Placing ${numNewStopOrders} new STOP_MARKET orders at previous prices...`
+  );
+
+  let remainingQty = positionSize;
+
+  for (let i = 0; i < numNewStopOrders; i++) {
+    let orderQty =
+      i === numNewStopOrders - 1
+        ? remainingQty // 🔹 Last order takes the full remaining quantity
+        : parseFloat((positionSize / numNewStopOrders).toFixed(3));
+
+    remainingQty -= orderQty; // Reduce remaining quantity
+
+    // Use the same stop price as before
+    const stopLossPrice =
+      stopLossPrices[i] || stopLossPrices[stopLossPrices.length - 1]; // Use last price if fewer orders
+
+    await binance.createOrder(
+      SYMBOL,
+      "STOP_MARKET",
+      side === "buy" ? "sell" : "buy",
+      orderQty,
+      stopLossPrice
+    );
+
+    console.log(`✅ STOP_MARKET order placed: ${orderQty} at ${stopLossPrice}`);
+  }
 }
