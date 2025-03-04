@@ -49,6 +49,9 @@ let error = 0;
 let neutral = false;
 let hasLoggedTradeTracking = false;
 let tradeExecutionOpen = false;
+let firstBook = false;
+let secondBook = false;
+let finalBook = false;
 let hasLoggedFindingTrades = false;
 let patternFound = false;
 let fallbackTradeActive = false;
@@ -824,12 +827,20 @@ const monitorOrderFilling = async () => {
     if (anyOrderFilled) {
       await manageOpenPositions();
       anyOrderFilled = false;
+      firstBook = false;
+      secondBook = false;
+      finalBook = false;
+      profitBooked = false;
     }
   }
 
   console.log("✅ Monitoring complete. All orders processed.");
   if (anyOrderFilled) {
     await manageOpenPositions();
+    firstBook = false;
+    secondBook = false;
+    finalBook = false;
+    profitBooked = false;
   }
 };
 
@@ -1049,6 +1060,7 @@ const manageOpenPositions = async () => {
 
           if (
             alertStatus[positionKey].first &&
+            !firstBook &&
             ((side === "buy" && price >= recentHigh * 0.99) ||
               (side === "sell" && price <= recentLow * 1.01))
           ) {
@@ -1072,11 +1084,13 @@ const manageOpenPositions = async () => {
                 "🚨 Position closed after partial profit booking. Exiting..."
               );
               profitBooked = false;
+
               return;
             }
 
             positionSize = parseFloat(updatedPosition.info.positionAmt);
             console.log(`🔄 Updated Position Size: ${positionSize}`);
+            firstBook = true;
             await updateStopLossOrders(positionSize, side);
           }
 
@@ -1094,6 +1108,7 @@ const manageOpenPositions = async () => {
 
           if (
             alertStatus[positionKey].second &&
+            !secondBook &&
             ((side === "buy" && price >= recentHigh * 0.95) ||
               (side === "sell" && price <= recentLow * 1.05))
           ) {
@@ -1104,6 +1119,7 @@ const manageOpenPositions = async () => {
               side === "buy" ? "sell" : "buy",
               positionSize * 0.4
             );
+
             const updatedPositions = await binance.fetchPositions();
             const updatedPosition = updatedPositions.find(
               (p) =>
@@ -1121,12 +1137,14 @@ const manageOpenPositions = async () => {
 
             positionSize = parseFloat(updatedPosition.info.positionAmt);
             console.log(`🔄 Updated Position Size: ${positionSize}`);
+            secondBook = true;
             await updateStopLossOrders(positionSize, side);
           }
 
           if (
             !alertStatus[positionKey].finalExit &&
             alertStatus[positionKey].second &&
+            !finalBook &&
             ((side === "buy" && price < smallEma) ||
               (side === "sell" && price > smallEma))
           ) {
@@ -1139,6 +1157,7 @@ const manageOpenPositions = async () => {
             );
             await cancelAllOpenOrders();
             delete alertStatus[positionKey]; // Clean up after closing position
+            finalBook = true;
             profitBooked = false;
             return;
           }
