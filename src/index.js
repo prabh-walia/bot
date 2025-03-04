@@ -55,6 +55,7 @@ let fallbackTradeActive = false;
 let BullishValidated = false;
 let BearishValidated = false;
 let patterns = [];
+let profitBooked = false;
 let SYMBOL;
 let orderQuantity;
 let multiple;
@@ -477,7 +478,7 @@ const findTrades = async () => {
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
-  "XRP/USDT": 3,
+  "XRP/USDT": 4,
   "SUI/USDT": 3,
 };
 const SL_PERCENTAGE = {
@@ -900,16 +901,22 @@ const manageOpenPositions = async () => {
         (side === "buy" && price >= alertTrigger) ||
         (side === "sell" && price <= alertTrigger)
       ) {
-        console.log("🚀 Alert System Activated: Tracking 12 EMA for exits...");
-        console.log(
-          "📈 Booking 30% Profit immediately after hitting 1:2 RR..."
-        );
-        await binance.createOrder(
-          SYMBOL,
-          "market",
-          side === "buy" ? "sell" : "buy",
-          positionSize * 0.3
-        );
+        if (!profitBooked) {
+          console.log(
+            "🚀 Alert System Activated: Tracking 12 EMA for exits..."
+          );
+          console.log(
+            "📈 Booking 30% Profit immediately after hitting 1:2 RR..."
+          );
+          const order = await binance.createOrder(
+            SYMBOL,
+            "market",
+            side === "buy" ? "sell" : "buy",
+            positionSize * 0.3
+          );
+          console.log("order crerated ->,", order);
+          profitBooked = true;
+        }
 
         const updatedPositions = await binance.fetchPositions();
         const updatedPosition = updatedPositions.find(
@@ -944,6 +951,7 @@ const manageOpenPositions = async () => {
         console.log(`🔄 Updated Position Size: ${positionSize}`);
 
         while (true) {
+          console.log("in while after 1:2");
           const randomDelay =
             Math.floor(Math.random() * (3700 - 3400 + 1)) + 3400;
           await new Promise((resolve) => setTimeout(resolve, randomDelay));
@@ -1003,7 +1011,10 @@ const manageOpenPositions = async () => {
                   "STOP_MARKET",
                   side === "buy" ? "sell" : "buy",
                   positionSize,
-                  newSL
+                  undefined,
+                  {
+                    stopPrice: newSL,
+                  }
                 );
               }
 
@@ -1060,6 +1071,7 @@ const manageOpenPositions = async () => {
               console.log(
                 "🚨 Position closed after partial profit booking. Exiting..."
               );
+              profitBooked = false;
               return;
             }
 
@@ -1103,6 +1115,7 @@ const manageOpenPositions = async () => {
               console.log(
                 "🚨 Position closed after partial profit booking. Exiting..."
               );
+              profitBooked = false;
               return;
             }
 
@@ -1126,12 +1139,14 @@ const manageOpenPositions = async () => {
             );
             await cancelAllOpenOrders();
             delete alertStatus[positionKey]; // Clean up after closing position
+            profitBooked = false;
             return;
           }
         }
       }
     } catch (err) {
       console.error("❌ Error fetching position:", err);
+
       continue; // ⚠️ Continue the loop even if an error occurs
     }
   }
@@ -1253,7 +1268,10 @@ async function updateStopLossOrders(positionSize, side) {
       "STOP_MARKET",
       side === "buy" ? "sell" : "buy",
       orderQty,
-      stopLossPrice
+      undefined,
+      {
+        stopPrice: stopLossPrice,
+      }
     );
 
     console.log(`✅ STOP_MARKET order placed: ${orderQty} at ${stopLossPrice}`);
