@@ -782,7 +782,7 @@ const monitorOrderFilling = async () => {
   let openOrders = await binance.fetchOpenOrders(SYMBOL);
 
   while (openOrders.length > 0) {
-    const randomDelay = Math.floor(Math.random() * (2500 - 2000 + 1)) + 2000;
+    const randomDelay = Math.floor(Math.random() * (2800 - 2000 + 1)) + 2000;
     await new Promise((resolve) => setTimeout(resolve, randomDelay)); // Poll every 2 sec
     const currentTime = Date.now();
     if (currentTime - orderStartTime > timeLimit) {
@@ -850,7 +850,7 @@ const manageOpenPositions = async () => {
   console.log("📡 Monitoring Open Positions...");
 
   while (true) {
-    const randomDelay = Math.floor(Math.random() * (3500 - 3000 + 1)) + 3000;
+    const randomDelay = Math.floor(Math.random() * (3700 - 3000 + 1)) + 3000;
     await new Promise((resolve) => setTimeout(resolve, randomDelay));
 
     try {
@@ -948,7 +948,7 @@ const manageOpenPositions = async () => {
         await updateStopLossOrders(positionSize, side);
 
         const randomDelay =
-          Math.floor(Math.random() * (3500 - 2500 + 1)) + 2500;
+          Math.floor(Math.random() * (3700 - 2500 + 1)) + 2500;
         await new Promise((resolve) => setTimeout(resolve, randomDelay)); // Small delay to ensure API updates
 
         if (!updatedPosition) {
@@ -964,7 +964,7 @@ const manageOpenPositions = async () => {
         while (true) {
           console.log("in while after 1:2");
           const randomDelay =
-            Math.floor(Math.random() * (3700 - 3400 + 1)) + 3400;
+            Math.floor(Math.random() * (3940 - 3400 + 1)) + 3400;
           await new Promise((resolve) => setTimeout(resolve, randomDelay));
 
           const { ohlcv, bigEma, smallEma } = await fetchAndAnalyzeCandles(
@@ -1117,7 +1117,7 @@ const manageOpenPositions = async () => {
               SYMBOL,
               "market",
               side === "buy" ? "sell" : "buy",
-              positionSize * 0.4
+              positionSize * 0.7
             );
 
             const updatedPositions = await binance.fetchPositions();
