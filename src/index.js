@@ -1153,7 +1153,7 @@ const manageOpenPositions = async () => {
               SYMBOL,
               "market",
               side === "buy" ? "sell" : "buy",
-              positionSize * 0.3
+              positionSize
             );
             await cancelAllOpenOrders();
             delete alertStatus[positionKey]; // Clean up after closing position
