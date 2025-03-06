@@ -578,9 +578,9 @@ const goToSmallerFrame = async (type) => {
 
     const open = lastCandle[1];
     const close = lastCandle[4];
-    const percentMove = close * 0.008; // 0.6% move range
+    const percentMove = close * 0.009; // 0.6% move range
 
-    const steps = [0.3, 0.7];
+    const steps = [0.4, 0.7];
     let orderPrices = [];
 
     if (type === "bullish") {
