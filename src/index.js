@@ -10,6 +10,7 @@ import {
   convertSymbol,
   fetchAndAnalyzeCandlesFortrend,
 } from "./fetchAndAnalyze.js";
+let trend;
 import { getRealTimePrice } from "./getPrice.js";
 import {
   isBullishEngulfing,
@@ -25,7 +26,7 @@ import { binance } from "./binanceClient.js";
 import { Status } from "./model.js";
 import { trade } from "./globalVariables.js";
 import { price } from "./getPrice.js";
-import { findTrend, trend } from "./trendFinder.js";
+
 import {
   AMOUNT,
   FIXED_RISK_AMOUNT,
@@ -522,7 +523,7 @@ const main = async () => {
     }
     if (status.botStatus.isRunning) {
       getRealTimePrice();
-      await findTrend();
+
       const { smallEma } = await fetchAndAnalyzeCandlesFortrend();
       if (price > smallEma * 1.008) {
         console.log("price is above ema");
