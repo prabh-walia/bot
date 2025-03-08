@@ -429,6 +429,7 @@ const findTrades = async () => {
         const result = checkLastCandle(lastCandle, smallEma);
         if (result.isBearish && result.isBelowEMA) {
           console.log("last candle is beairhs and below EMA");
+          const latestRSI20 = calculateRSI20(closingPrices);
           if (latestRSI20 > 25) {
             goToSmallerFrame("bearish");
           } else {
