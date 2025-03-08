@@ -379,7 +379,13 @@ const findTrades = async () => {
 
         if (result.isBullish && result.isAboveEMA) {
           console.log("last candle is bullish and above EMA");
-          goToSmallerFrame("bullish");
+          const latestRSI20 = calculateRSI20(closingPrices);
+
+          if (latestRSI20 < 80) {
+            goToSmallerFrame("bullish");
+          } else {
+            console.log("❌ RSI is not below 80. No order placement.");
+          }
         } else if (result.isBullish) {
           console.log("last candle is not bullish or not above");
           const closingPrices = ohlcv.map((candle) => candle[4]);
@@ -421,7 +427,11 @@ const findTrades = async () => {
         const result = checkLastCandle(lastCandle, smallEma);
         if (result.isBearish && result.isBelowEMA) {
           console.log("last candle is beairhs and below EMA");
-          goToSmallerFrame("bearish");
+          if (latestRSI20 > 25) {
+            goToSmallerFrame("bearish");
+          } else {
+            console.log("rsi is not above 25");
+          }
         } else if (result.isBearish) {
           console.log("last candle is not bearish or not below");
           const closingPrices = ohlcv.map((candle) => candle[4]);
@@ -672,7 +682,25 @@ const getOrderPrices = async (type, lastCandle) => {
 
     try {
       ordersPlaced = await placeLimitOrders(orderPrices, type);
+      const positions = await binance.fetchPositions();
+      const position = positions.find(
+        (p) =>
+          p.info.symbol === SYMBOL.replace("/", "") &&
+          parseFloat(p.info.positionAmt) !== 0
+      );
+      if (!position) {
+        console.log(" No open positions. confiremd");
+      } else {
+        console.log(" oh  Position open");
+        await manageOpenPositions();
 
+        firstBook = false;
+        secondBook = false;
+        finalBook = false;
+        profitBooked = false;
+        return;
+      }
+      console.log("orderPlaced ->", ordersPlaced);
       const hasSuccessfulTrade = ordersPlaced.some(
         (order) => order.status === "OPEN"
       );
@@ -848,7 +876,48 @@ const alertStatus = {}; // Store alert status for different positions
 
 const manageOpenPositions = async () => {
   console.log("📡 Monitoring Open Positions...");
+  let openOrders = await binance.fetchOpenOrders(SYMBOL);
+  const stopOrders = openOrders.filter(
+    (order) => order.info.type === "STOP_MARKET"
+  );
 
+  if (stopOrders.length > 0) {
+    console.log("STOP_MARKET order already exists. No action needed.");
+  } else {
+    console.log("No STOP_MARKET order found. Creating a new one...");
+    const positions = await binance.fetchPositions();
+    const position = positions.find(
+      (p) =>
+        p.info.symbol === SYMBOL.replace("/", "") &&
+        parseFloat(p.info.positionAmt) !== 0
+    );
+    if (!position) {
+      console.log("⚠️ No open positions. Stopping monitoring.");
+      ordersPending = false;
+      return; // Exit function if no positions are open
+    }
+    let positionSize = parseFloat(position?.info.positionAmt);
+    let entryPrice = parseFloat(position.info.entryPrice);
+
+    const side = positionSize > 0 ? "buy" : "sell";
+
+    let stopPrice = side === "buy" ? entryPrice * 0.988 : entryPrice * 1.013;
+
+    // Ensure correct price precision
+    stopPrice = parseFloat(stopPrice);
+    await binance.createOrder(
+      SYMBOL,
+      "STOP_MARKET",
+      side === "buy" ? "sell" : "buy",
+      positionSize,
+      undefined,
+      {
+        stopPrice: stopPrice,
+      }
+    );
+
+    console.log("STOP_MARKET order created successfully.");
+  }
   while (true) {
     const randomDelay = Math.floor(Math.random() * (3700 - 3000 + 1)) + 3000;
     await new Promise((resolve) => setTimeout(resolve, randomDelay));
