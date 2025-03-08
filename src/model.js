@@ -26,6 +26,7 @@ const statusSchema = new Schema({
     updateTimestamp: Date,
     sourceTimeframe: String,
     smallTimeframe: String,
+    TrendFrame: String,
     higherEMA: Number,
     lowerEMA: Number,
   },

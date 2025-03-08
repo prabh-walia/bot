@@ -8,6 +8,7 @@ import {
   checkUpTrend,
   checkFrequentSideways,
   convertSymbol,
+  fetchAndAnalyzeCandlesFortrend,
 } from "./fetchAndAnalyze.js";
 import { getRealTimePrice } from "./getPrice.js";
 import {
@@ -522,6 +523,14 @@ const main = async () => {
     if (status.botStatus.isRunning) {
       getRealTimePrice();
       await findTrend();
+      const { smallEma } = await fetchAndAnalyzeCandlesFortrend();
+      if (price > smallEma * 1.008) {
+        console.log("price is above ema");
+        trend = "bullish";
+      } else {
+        console.log("price is below ema");
+        trend = "bearish";
+      }
       console.log("trend ->", trend);
       await findTrades();
       // const openOrders = await binance.fetchOpenOrders(SYMBOL);

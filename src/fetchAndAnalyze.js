@@ -57,6 +57,31 @@ export const fetchAndAnalyzeCandles = async (size) => {
   }
 };
 
+export const fetchAndAnalyzeCandlesFortrend = async () => {
+  try {
+    const status = await Status.findOne();
+    if (!status) throw new Error("Status not found");
+
+    const SYMBOL = convertSymbol(status.symbol);
+    const HigherEMA = status.trendStatus?.higherEMA;
+    const LowerEMA = status.trendStatus?.lowerEMA;
+
+    // Set timeframe based on `size`
+    const TIMEFRAME = status.trendStatus?.TrendFrame;
+
+    console.log("TIMEFRAME TREND", TIMEFRAME);
+    const ohlcv = await binance.fetchOHLCV(SYMBOL, TIMEFRAME, undefined, LIMIT);
+    const closingPrices = ohlcv.map((entry) => entry[4]);
+    const bigEma = calculateEMA(closingPrices, HigherEMA);
+    const smallEma = calculateEMA(closingPrices, LowerEMA);
+
+    console.log("YS CURRENT PRICE IS THIS ->", getCurrentPrice());
+
+    return { smallEma };
+  } catch (error) {
+    console.error("Error fetching and analyzing candles:", error);
+  }
+};
 const calculateAverage = (data) => {
   const sum = data.reduce((acc, value) => acc + value, 0);
   return sum / data.length;
