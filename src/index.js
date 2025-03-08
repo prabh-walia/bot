@@ -381,6 +381,7 @@ const findTrades = async () => {
 
         if (result.isBullish && result.isAboveEMA) {
           console.log("last candle is bullish and above EMA");
+          const closingPrices = ohlcv.map((candle) => candle[4]);
           const latestRSI20 = calculateRSI20(closingPrices);
 
           if (latestRSI20 < 80) {
@@ -428,6 +429,7 @@ const findTrades = async () => {
       } else if (trend == "bearish") {
         const result = checkLastCandle(lastCandle, smallEma);
         if (result.isBearish && result.isBelowEMA) {
+          const closingPrices = ohlcv.map((candle) => candle[4]);
           console.log("last candle is beairhs and below EMA");
           const latestRSI20 = calculateRSI20(closingPrices);
           if (latestRSI20 > 25) {
