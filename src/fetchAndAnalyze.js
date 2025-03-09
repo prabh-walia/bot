@@ -73,11 +73,11 @@ export const fetchAndAnalyzeCandlesFortrend = async () => {
     const ohlcv = await binance.fetchOHLCV(SYMBOL, TIMEFRAME, undefined, LIMIT);
     const closingPrices = ohlcv.map((entry) => entry[4]);
     const bigEma = calculateEMA(closingPrices, HigherEMA);
-    const smallEma = calculateEMA(closingPrices, LowerEMA);
+    const smallEmat = calculateEMA(closingPrices, LowerEMA);
 
     console.log("YS CURRENT PRICE IS THIS ->", getCurrentPrice());
 
-    return { smallEma };
+    return { smallEmat };
   } catch (error) {
     console.error("Error fetching and analyzing candles:", error);
   }

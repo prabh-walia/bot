@@ -80,222 +80,6 @@ let tradeCompletedAt = 0;
 
 const getRandomDelay = () => Math.floor(Math.random() * (190 - 60 + 1)) + 100;
 
-export const tracker = () => {
-  if (trade == false) {
-    if (!hasLoggedTradeTracking) {
-      console.log(`Tracing trades :   ......`);
-      hasLoggedTradeTracking = true;
-    }
-
-    if (BullishValidated) {
-      let count = 0;
-      count == 0 &&
-        console.log(
-          `pattern - bullish - ${BullishValidated} price = ${price} -H- ${high} -L- ${low}`
-        );
-      count++;
-
-      if (price > high) {
-        console.log("price crossed high +");
-        isBullishTrade = true;
-        BullishValidated = false;
-        hasLoggedTradeTracking = false;
-      } else if (price < low) {
-        console.log("Price reversed");
-
-        BullishValidated = false;
-        tradeExecutionOpen = false;
-        patternFound = false;
-        hasLoggedTradeTracking = false;
-        high = null;
-        low = null;
-      } else {
-        hasLoggedTradeTracking = false;
-      }
-    } else if (BearishValidated) {
-      let count = 0;
-      count == 0 &&
-        console.log(
-          `pattern trade- bearish - ${BearishValidated}  price = ${price} -H- ${high} -L- ${low}`
-        );
-      count++;
-
-      if (price < low) {
-        console.log("price crossed low +");
-        isBearishTrade = true;
-        BearishValidated = false;
-        hasLoggedTradeTracking = false;
-      } else if (price > high) {
-        console.log("Price reversed");
-
-        BearishValidated = false;
-        tradeExecutionOpen = false;
-        hasLoggedTradeTracking = false;
-        patternFound = false;
-        high = null;
-        low = null;
-      } else {
-        hasLoggedTradeTracking = false;
-      }
-    }
-  }
-};
-
-const TradeExecutor = async (stopLossPrice, Ratio, patternType) => {
-  console.log("inside trade executor");
-  if (stopLossPrice == null || isNaN(stopLossPrice)) {
-    throw new Error(
-      `Invalid stopLossPrice: Stop loss price is required and must be a number. coming from trade exector sl->${stopLossPrice} `
-    );
-  }
-
-  while (trade == false) {
-    if (isBullishTrade) {
-      console.log("Trade going to be executed .... buy");
-      trade = true;
-      const takeProfitPrice = price + Ratio * (price - stopLossPrice);
-      console.log(
-        `SL = ${stopLossPrice} TP = ${takeProfitPrice}  entry - ${price}`
-      );
-      const candleSizePercent = ((price - stopLossPrice) / price) * 100;
-      let quantity = getQuantity(candleSizePercent);
-      console.log("quantity ->", quantity);
-      if (quantity != 0) {
-        const { stopLossOrder, takeProfitOrder, currentPrice, tradeId } =
-          await placeOrder(
-            SYMBOL,
-            "buy",
-            quantity,
-            stopLossPrice,
-            takeProfitPrice,
-            patternType
-          );
-
-        fallbackTradeActive = true;
-        patterns.push(patternType);
-        let outcome = await monitorOrders(
-          SYMBOL,
-          stopLossOrder.id,
-          takeProfitOrder.id,
-          price,
-          stopLossPrice,
-          "buy",
-          quantity,
-          tradeId,
-          patternType
-        );
-
-        totalTrades++;
-        if (outcome[0] === "profit") {
-          tradeCompletedAt = Date.now();
-          console.log(
-            ` profit -price ->${currentPrice} ${typeof currentPrice}  outcome1- ${
-              outcome[1]
-            }  ${typeof outcome[1]}`
-          );
-          let profit = quantity * (outcome[1] - currentPrice);
-          profitTrades++;
-          totalProfit += profit;
-          let fees = quantity * (0.1 / 100);
-          totalFees += fees * currentPrice;
-        } else {
-          console.log(
-            ` loss -price ->${currentPrice} ${typeof currentPrice}  outcome1- ${
-              outcome[1]
-            }  ${typeof outcome[1]}`
-          );
-          let loss = quantity * (currentPrice - outcome[1]);
-          totalLoss += loss;
-          let fees = quantity * (0.1 / 100);
-          totalFees += fees * currentPrice;
-        }
-      }
-
-      trade = false;
-      high = null;
-      low = null;
-      isBullishTrade = false;
-      tradeExecutionOpen = false;
-      BullishValidated = false;
-      BullishPatternFound = false;
-      fallbackTradeActive = false;
-    }
-    if (isBearishTrade) {
-      console.log("Trade going to be executed .... sell");
-      trade = true;
-      const takeProfitPrice = price - Ratio * (stopLossPrice - price);
-      console.log(
-        `SL = ${stopLossPrice} TP = ${takeProfitPrice} entry ${price}`
-      );
-      const candleSizePercent = ((stopLossPrice - price) / price) * 100;
-      let quantity = getQuantity(candleSizePercent);
-      console.log("quantity ->", quantity);
-
-      if (quantity != 0) {
-        const { stopLossOrder, takeProfitOrder, currentPrice, tradeId } =
-          await placeOrder(
-            SYMBOL,
-            "sell",
-            quantity,
-            stopLossPrice,
-            takeProfitPrice,
-            patternType
-          );
-
-        fallbackTradeActive = true;
-        patterns.push(patternType);
-        let outcome = await monitorOrders(
-          SYMBOL,
-          stopLossOrder.id,
-          takeProfitOrder.id,
-          price,
-          high,
-          "sell",
-          quantity,
-          tradeId,
-          patternType
-        );
-        totalTrades++;
-
-        if (outcome[0] === "profit") {
-          tradeCompletedAt = Date.now();
-          console.log(
-            `profit -price ->${currentPrice} ${typeof currentPrice}  outcome1- ${
-              outcome[1]
-            }  ${typeof outcome[1]}`
-          );
-          let profit = quantity * (currentPrice - outcome[1]);
-          profitTrades++;
-          totalProfit += profit;
-          let fees = quantity * (0.1 / 100);
-          totalFees += fees * currentPrice;
-        } else {
-          console.log(
-            `loss price ->${currentPrice} ${typeof currentPrice} outcome1- ${
-              outcome[1]
-            } ${typeof outcome[1]}`
-          );
-          let loss = quantity * (outcome[1] - currentPrice);
-          totalLoss += loss;
-          let fees = quantity * (0.1 / 100);
-          totalFees += fees * currentPrice;
-        }
-      }
-
-      BearishPatternFound = false;
-      fallbackTradeActive = false;
-
-      high = null;
-      low = null;
-      tradeExecutionOpen = false;
-      trade = false;
-      BearishValidated = false;
-      isBearishTrade = false;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-};
-
 const findTrades = async () => {
   while (true) {
     try {
@@ -370,10 +154,17 @@ const findTrades = async () => {
       console.log("EMA->", bigEma);
       console.log("small ema =", smallEma);
 
-      // const priceWithinRange =
-      //   price >= bigEma * 0.962 && price <= bigEma * 1.038;
-      // const priceWithinRange2 =
-      //   price >= bigEma * 0.98 && price <= bigEma * 1.02;
+      const { smallEmat } = await fetchAndAnalyzeCandlesFortrend();
+      if (price > smallEmat * 1.008) {
+        console.log("price is above ema");
+        trend = "bullish";
+      } else if (price < smallEmat * 0.994) {
+        console.log("price is below ema");
+        trend = "bearish";
+      } else {
+        trend = "neutral";
+      }
+      console.log("trend ->", trend);
       console.log("Trend ->", trend);
 
       if (trend === "bullish") {
@@ -416,16 +207,6 @@ const findTrades = async () => {
         //     priceWithinRange2,
         //     ohlcv
         //   );
-        console.log(`p-${patternFound},t-${tradeExecutionOpen}`);
-        if (patternFound && tradeExecutionOpen == false) {
-          console.log(" going to run trade executer");
-          tradeExecutionOpen = true;
-          if (stopLossPrice) {
-            TradeExecutor(stopLossPrice, ratio, patternType);
-          } else {
-            tradeExecutionOpen = false;
-          }
-        }
       } else if (trend == "bearish") {
         const result = checkLastCandle(lastCandle, smallEma);
         if (result.isBearish && result.isBelowEMA) {
@@ -462,30 +243,11 @@ const findTrades = async () => {
         //     priceWithinRange2,
         //     ohlcv
         //   );
-
-        if (patternFound && tradeExecutionOpen == false) {
-          tradeExecutionOpen = true;
-          if (stopLossPrice) {
-            TradeExecutor(stopLossPrice, ratio, patternType);
-          } else {
-            tradeExecutionOpen = false;
-          }
-        }
       } else {
-        if (checkUpTrend(ohlcv_B) || checkFrequentSideways(ohlcv_B)) {
-          trend = "bullish";
-        } else if (checkDownTrend(ohlcv_B)) {
-          trend = "bearish";
-        }
+        console.log("market ranged");
       }
 
-      console.log(`profit ${totalProfit - totalLoss} `);
-      console.log(`loss ${totalLoss} `);
-      console.log("total trades -", totalTrades);
-      console.log("total profitable trades -", profitTrades);
-      console.log("Total fees ->", totalFees);
       console.log("errorZ - ", error);
-      patterns.map((pattern) => console.log("patterns ->", pattern));
     } catch (error) {
       error += error;
       console.error("Error tracking real-time price:", error);
@@ -527,15 +289,6 @@ const main = async () => {
     if (status.botStatus.isRunning) {
       getRealTimePrice();
 
-      const { smallEma } = await fetchAndAnalyzeCandlesFortrend();
-      if (price > smallEma * 1.008) {
-        console.log("price is above ema");
-        trend = "bullish";
-      } else {
-        console.log("price is below ema");
-        trend = "bearish";
-      }
-      console.log("trend ->", trend);
       await findTrades();
       // const openOrders = await binance.fetchOpenOrders(SYMBOL);
       console.log("open orders->", openOrders);
@@ -915,7 +668,7 @@ const manageOpenPositions = async () => {
     const side = positionSize > 0 ? "buy" : "sell";
 
     let stopPrice = side === "buy" ? entryPrice * 0.988 : entryPrice * 1.013;
-
+    console.log("positionn sizee->", positionSize);
     // Ensure correct price precision
     stopPrice = parseFloat(stopPrice);
     await binance.createOrder(
@@ -965,7 +718,7 @@ const manageOpenPositions = async () => {
       const finalExitTrigger =
         side === "buy" ? entryPrice + risk * 7 : entryPrice - risk * 6;
       const positionKey = `${SYMBOL}_${entryPrice}`; // Unique key for position tracking
-
+      console.log(finalExitTrigger, "final exit trigger");
       if (!alertStatus[positionKey]) {
         alertStatus[positionKey] = {
           first: false,
@@ -979,6 +732,7 @@ const manageOpenPositions = async () => {
         (price <= finalExitTrigger && side === "sell")
       ) {
         console.log("🏆 Price hit 1:7 Risk-Reward! Closing entire position...");
+        console.log("position 1:7 ->", position);
         await binance.createOrder(
           SYMBOL,
           "market",
