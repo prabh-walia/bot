@@ -748,7 +748,7 @@ const manageOpenPositions = async () => {
           SYMBOL,
           "market",
           side === "buy" ? "sell" : "buy",
-          positionSize
+          Math.abs(positionSize)
         );
         await cancelAllOpenOrders();
         delete alertStatus[positionKey];
@@ -771,7 +771,7 @@ const manageOpenPositions = async () => {
             SYMBOL,
             "market",
             side === "buy" ? "sell" : "buy",
-            positionSize * 0.3
+            Math.abs(positionSize) * 0.3
           );
           console.log("order crerated ->,", order);
           profitBooked = true;
@@ -869,7 +869,7 @@ const manageOpenPositions = async () => {
                   SYMBOL,
                   "STOP_MARKET",
                   side === "buy" ? "sell" : "buy",
-                  positionSize,
+                  Math.abs(positionSize),
                   undefined,
                   {
                     stopPrice: newSL,
@@ -917,7 +917,7 @@ const manageOpenPositions = async () => {
               SYMBOL,
               "market",
               side === "buy" ? "sell" : "buy",
-              positionSize * 0.3
+              Math.abs(positionSize) * 0.3
             );
 
             const updatedPositions = await binance.fetchPositions();
@@ -965,7 +965,7 @@ const manageOpenPositions = async () => {
               SYMBOL,
               "market",
               side === "buy" ? "sell" : "buy",
-              positionSize * 0.7
+              Math.abs(positionSize) * 0.7
             );
 
             const updatedPositions = await binance.fetchPositions();
@@ -1001,7 +1001,7 @@ const manageOpenPositions = async () => {
               SYMBOL,
               "market",
               side === "buy" ? "sell" : "buy",
-              positionSize
+              Math.abs(positionSize)
             );
             await cancelAllOpenOrders();
             delete alertStatus[positionKey]; // Clean up after closing position
