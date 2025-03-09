@@ -766,6 +766,7 @@ const manageOpenPositions = async () => {
           console.log(
             "📈 Booking 30% Profit immediately after hitting 1:2 RR..."
           );
+          console.log("positionSI->", positionSize);
           const order = await binance.createOrder(
             SYMBOL,
             "market",
