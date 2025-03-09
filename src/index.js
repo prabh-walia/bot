@@ -300,28 +300,6 @@ const main = async () => {
       } else {
         await manageOpenPositions();
       }
-
-      // const openOrders = await binance.fetchOpenOrders(SYMBOL);
-      console.log("open orders->", openOrders);
-
-      // try {
-      //   const order = await binance.createOrder(
-      //     SYMBOL,
-      //     "limit",
-      //     "buy",
-      //     2,
-      //     18.34,
-      //     {
-      //       stopLimitPrice: 18.3,
-
-      //       stopLimitTimeInForce: "FOK", // Good Till Cancelled
-      //       reduceOnly: false, // Not reducing a position, just opening it
-      //     }
-      //   );
-      //   console.log(`✅ Limit Order Placed `, order);
-      // } catch (err) {
-      //   console.log("err", err);
-      // }
     } else {
       console.log("Bot is not running. Skipping real-time price fetching.");
     }
