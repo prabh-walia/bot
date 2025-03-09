@@ -1092,16 +1092,15 @@ function calculateRSI20(closingPrices) {
 }
 
 async function updateStopLossOrders(positionSize, side) {
-  if (positionSize <= 0) {
+  if (Math.abs(positionSize) <= 0) {
+    // ✅ Fix: Ensure it works for shorts
     console.log("🚨 No active position left. Skipping stop-loss update...");
     return;
   }
 
-  // 🔍 Fetch current stop-market orders
   const openOrders = await binance.fetchOpenOrders(SYMBOL);
   const stopOrders = openOrders.filter((order) => order.type === "stop_market");
 
-  // 🛑 Save stop-loss prices before canceling
   const stopLossPrices = stopOrders.map((order) => parseFloat(order.stopPrice));
 
   console.log(`🛑 Cancelling ${stopOrders.length} existing stop orders...`);
@@ -1109,26 +1108,23 @@ async function updateStopLossOrders(positionSize, side) {
     await binance.cancelOrder(order.id, SYMBOL);
   }
 
-  // ✅ Determine the number of new SL orders (1 less than before)
   const numNewStopOrders = Math.max(1, stopOrders.length - 1);
-
   console.log(
     `📌 Placing ${numNewStopOrders} new STOP_MARKET orders at previous prices...`
   );
 
-  let remainingQty = positionSize;
+  let remainingQty = Math.abs(positionSize); // ✅ Fix: Ensure positive quantity
 
   for (let i = 0; i < numNewStopOrders; i++) {
     let orderQty =
       i === numNewStopOrders - 1
-        ? remainingQty // 🔹 Last order takes the full remaining quantity
-        : parseFloat((positionSize / numNewStopOrders).toFixed(3));
+        ? remainingQty
+        : parseFloat((remainingQty / numNewStopOrders).toFixed(3));
 
-    remainingQty -= orderQty; // Reduce remaining quantity
+    remainingQty -= orderQty;
 
-    // Use the same stop price as before
     const stopLossPrice =
-      stopLossPrices[i] || stopLossPrices[stopLossPrices.length - 1]; // Use last price if fewer orders
+      stopLossPrices[i] || stopLossPrices[stopLossPrices.length - 1];
 
     await binance.createOrder(
       SYMBOL,
@@ -1136,9 +1132,7 @@ async function updateStopLossOrders(positionSize, side) {
       side === "buy" ? "sell" : "buy",
       orderQty,
       undefined,
-      {
-        stopPrice: stopLossPrice,
-      }
+      { stopPrice: stopLossPrice }
     );
 
     console.log(`✅ STOP_MARKET order placed: ${orderQty} at ${stopLossPrice}`);
