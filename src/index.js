@@ -289,7 +289,18 @@ const main = async () => {
     if (status.botStatus.isRunning) {
       getRealTimePrice();
 
-      await findTrades();
+      const positions = await binance.fetchPositions();
+      const position = positions.find(
+        (p) =>
+          p.info.symbol === SYMBOL.replace("/", "") &&
+          parseFloat(p.info.positionAmt) !== 0
+      );
+      if (!position) {
+        await findTrades();
+      } else {
+        await manageOpenPositions();
+      }
+
       // const openOrders = await binance.fetchOpenOrders(SYMBOL);
       console.log("open orders->", openOrders);
 
