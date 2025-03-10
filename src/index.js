@@ -717,23 +717,6 @@ const manageOpenPositions = async () => {
       }
 
       if (
-        (price >= finalExitTrigger && side === "buy") ||
-        (price <= finalExitTrigger && side === "sell")
-      ) {
-        console.log("🏆 Price hit 1:7 Risk-Reward! Closing entire position...");
-        console.log("position 1:7 ->", position);
-        await binance.createOrder(
-          SYMBOL,
-          "market",
-          side === "buy" ? "sell" : "buy",
-          Math.abs(positionSize)
-        );
-        await cancelAllOpenOrders();
-        delete alertStatus[positionKey];
-        return;
-      }
-
-      if (
         (side === "buy" && price >= alertTrigger) ||
         (side === "sell" && price <= alertTrigger)
       ) {
