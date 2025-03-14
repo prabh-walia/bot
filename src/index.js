@@ -478,7 +478,22 @@ const placeLimitOrders = async (prices, type) => {
   const amount = orderQuantity * multiple * 1.1; // Order quantity
   const stopLossPercentage = slPercentage;
   let orderResults = [];
+  const positions = await binance.fetchPositions();
+  const position = positions.find(
+    (p) =>
+      p.info.symbol === SYMBOL.replace("/", "") &&
+      parseFloat(p.info.positionAmt) !== 0
+  );
+  if (position) {
+    console.log("⚠️  positions already opened. Stopping placing orders.");
+    await manageOpenPositions();
 
+    firstBook = false;
+    secondBook = false;
+    finalBook = false;
+    profitBooked = false;
+    return;
+  }
   try {
     for (let price of prices) {
       let slPrice;
