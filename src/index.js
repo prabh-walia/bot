@@ -787,6 +787,7 @@ const manageOpenPositions = async () => {
 
         while (true) {
           console.log("in while after 1:2");
+
           const randomDelay =
             Math.floor(Math.random() * (3940 - 3400 + 1)) + 3400;
           await new Promise((resolve) => setTimeout(resolve, randomDelay));
@@ -809,6 +810,20 @@ const manageOpenPositions = async () => {
               );
               await cancelAllOpenOrders();
               delete alertStatus[positionKey];
+              return;
+            }
+            if (
+              (side === "buy" && price >= finalExitTrigger) ||
+              (side === "sell" && price <= finalExitTrigger)
+            ) {
+              console.log("📈 Booking all Profit at near final exit trigger");
+              await binance.createOrder(
+                SYMBOL,
+                "market",
+                side === "buy" ? "sell" : "buy",
+                Math.abs(positionSize)
+              );
+
               return;
             }
 
