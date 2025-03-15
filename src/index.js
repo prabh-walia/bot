@@ -262,7 +262,7 @@ const MIN_ORDER_QUANTITY = {
   "SUI/USDT": 3,
 };
 const SL_PERCENTAGE = {
-  "1h": 0.012,
+  "1h": 0.011,
   "30m": 0.007,
   "2h": 0.02,
   "4h": 0.03,
