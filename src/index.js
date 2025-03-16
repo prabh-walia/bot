@@ -11,6 +11,7 @@ import {
   fetchAndAnalyzeCandlesFortrend,
 } from "./fetchAndAnalyze.js";
 let trend;
+import { findTrend } from "./trendFinder.js";
 import { getRealTimePrice } from "./getPrice.js";
 import {
   isBullishEngulfing,
@@ -162,7 +163,7 @@ const findTrades = async () => {
         console.log("price is below ema");
         trend = "bearish";
       } else {
-        trend = "neutral";
+        trend = await findTrend();
       }
       console.log("trend ->", trend);
       console.log("Trend ->", trend);
