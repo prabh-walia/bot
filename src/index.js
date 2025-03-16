@@ -65,6 +65,8 @@ let profitBooked = false;
 let SYMBOL;
 let orderQuantity;
 let multiple;
+let lastOrderExecuted = false;
+let lastSlOrderExecuted = false;
 let slPercentage;
 let BullishPatternFound = false;
 let BearishPatternFound = false;
@@ -300,6 +302,12 @@ const main = async () => {
         await findTrades();
       } else {
         await manageOpenPositions();
+        lastOrderExecuted = false;
+        lastSlOrderExecuted = false;
+        firstBook = false;
+        secondBook = false;
+        finalBook = false;
+        profitBooked = false;
       }
     } else {
       console.log("Bot is not running. Skipping real-time price fetching.");
@@ -451,6 +459,8 @@ const getOrderPrices = async (type, lastCandle) => {
         await manageOpenPositions();
 
         firstBook = false;
+        lastOrderExecuted = false;
+        lastSlOrderExecuted = false;
         secondBook = false;
         finalBook = false;
         profitBooked = false;
@@ -490,6 +500,8 @@ const placeLimitOrders = async (prices, type) => {
     await manageOpenPositions();
 
     firstBook = false;
+    lastOrderExecuted = false;
+    lastSlOrderExecuted = false;
     secondBook = false;
     finalBook = false;
     profitBooked = false;
@@ -625,6 +637,8 @@ const monitorOrderFilling = async () => {
 
     if (anyOrderFilled) {
       await manageOpenPositions();
+      lastOrderExecuted = false;
+      lastSlOrderExecuted = false;
       anyOrderFilled = false;
       firstBook = false;
       secondBook = false;
@@ -638,6 +652,8 @@ const monitorOrderFilling = async () => {
     await manageOpenPositions();
     firstBook = false;
     secondBook = false;
+    lastOrderExecuted = false;
+    lastSlOrderExecuted = false;
     finalBook = false;
     profitBooked = false;
   }
@@ -689,6 +705,7 @@ const manageOpenPositions = async () => {
 
     console.log("STOP_MARKET order created successfully.");
   }
+
   while (true) {
     const randomDelay = Math.floor(Math.random() * (3700 - 3000 + 1)) + 3000;
     await new Promise((resolve) => setTimeout(resolve, randomDelay));
@@ -713,6 +730,68 @@ const manageOpenPositions = async () => {
       let entryPrice = parseFloat(position.info.entryPrice);
 
       const side = positionSize > 0 ? "buy" : "sell";
+      const amount = orderQuantity * multiple;
+      if (
+        Math.abs(positionSize) > amount * 2 &&
+        (!lastOrderExecuted || !lastSlOrderExecuted)
+      ) {
+        if (price > entryPrice * 1.003) {
+          const stopLossPercentage = slPercentage;
+          let slSide;
+          let slPrice;
+          if (side === "buy") {
+            side = "buy";
+            slSide = "sell"; // Stop-market order should be the opposite
+            slPrice = price * (1 - stopLossPercentage); // SL 0.5% below entry price
+          } else {
+            side = "sell";
+            slSide = "buy"; // Stop-market order should be the opposite
+            slPrice = price * (1 + stopLossPercentage); // SL 0.5% above entry price
+          }
+          console.log("adding additional quantity");
+          try {
+            if (!lastOrderExecuted) {
+              // Create Limit Order
+              const order = await binance.createOrder(
+                SYMBOL,
+                "market",
+                side,
+                amount * 2,
+
+                undefined
+              );
+
+              console.log(
+                `✅ market Order Placed (${side.toUpperCase()}) at ${price} with SL at ${slPrice}:`
+              );
+
+              lastOrderExecuted = true;
+            }
+            // Create Stop-Market Order for Stop Loss
+            if (!lastSlOrderExecuted) {
+              const stopLossOrder = await binance.createOrder(
+                SYMBOL,
+                "STOP_MARKET",
+                slSide,
+                amount * 2,
+                undefined,
+                {
+                  stopPrice: slPrice,
+                }
+              );
+
+              console.log(
+                `🛑 Stop-Market Order Placed (${slSide.toUpperCase()}) at ${slPrice}`
+              );
+
+              lastSlOrderExecuted = true;
+            }
+          } catch (orderError) {
+            console.error(`❌ Failed to place order at ${price}:`, orderError);
+            continue;
+          }
+        }
+      }
       console.log(
         `📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
       );
