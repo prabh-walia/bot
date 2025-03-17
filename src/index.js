@@ -729,14 +729,14 @@ const manageOpenPositions = async () => {
       let positionSize = parseFloat(position?.info.positionAmt);
       let entryPrice = parseFloat(position.info.entryPrice);
 
-      const side = positionSize > 0 ? "buy" : "sell";
+      let side = positionSize > 0 ? "buy" : "sell";
       const amount = orderQuantity * multiple;
       if (
         Math.abs(positionSize) > amount * 2 &&
         (!lastOrderExecuted || !lastSlOrderExecuted)
       ) {
         if (price > entryPrice * 1.003) {
-          const stopLossPercentage = slPercentage;
+          let stopLossPercentage = slPercentage;
           let slSide;
           let slPrice;
           if (side === "buy") {
