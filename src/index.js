@@ -883,7 +883,7 @@ const manageOpenPositions = async () => {
                 p.info.symbol === SYMBOL.replace("/", "") &&
                 parseFloat(p.info.positionAmt) !== 0
             );
-
+            console.log(" 📊  Pnl>", updatedPosition?.info?.unRealizedProfit);
             if (!updatedPosition) {
               console.log(
                 "🚨 Position closed during alert tracking. Exiting..."
