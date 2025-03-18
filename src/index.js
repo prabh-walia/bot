@@ -261,13 +261,13 @@ const findTrades = async () => {
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
-  "XRP/USDT": 4,
+  "XRP/USDT": 5,
   "SUI/USDT": 3,
 };
 const SL_PERCENTAGE = {
-  "1h": 0.011,
+  "1h": 0.01,
   "30m": 0.007,
-  "2h": 0.02,
+  "2h": 0.01,
   "4h": 0.03,
 };
 
@@ -796,11 +796,11 @@ const manageOpenPositions = async () => {
         `📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
       );
 
-      const risk = entryPrice * 0.012;
+      const risk = entryPrice * 0.011;
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
-        side === "buy" ? entryPrice + risk * 7 : entryPrice - risk * 6;
+        side === "buy" ? entryPrice + risk * 6 : entryPrice - risk * 5;
       const positionKey = `${SYMBOL}_${entryPrice}`; // Unique key for position tracking
       console.log(finalExitTrigger, "final exit trigger");
       if (!alertStatus[positionKey]) {
@@ -909,14 +909,18 @@ const manageOpenPositions = async () => {
 
             // ✅ If price reaches 1:3 RR, start trailing SL (only once)
             const trailingTrigger =
-              side === "buy" ? entryPrice + risk * 3 : entryPrice - risk * 3;
+              side === "buy"
+                ? entryPrice + risk * 2.5
+                : entryPrice - risk * 2.3;
 
             if (
               !alertStatus[positionKey].trailingSlTriggered && // ✅ Check if SL update already happened
               ((side === "buy" && price >= trailingTrigger) ||
                 (side === "sell" && price <= trailingTrigger))
             ) {
-              console.log("🚀 Price hit 1:3 RR! Trailing Stop-Loss by 40%...");
+              console.log(
+                "🚀 Price hit 1:2.5 RR! Trailing Stop-Loss by 40%..."
+              );
 
               try {
                 const openOrders = await binance.fetchOpenOrders(SYMBOL);
@@ -1032,8 +1036,8 @@ const manageOpenPositions = async () => {
             if (
               alertStatus[positionKey].second &&
               !secondBook &&
-              ((side === "buy" && price >= recentHigh * 1.005) ||
-                (side === "sell" && price <= recentLow * 0.995))
+              ((side === "buy" && price >= recentHigh * 1.015) ||
+                (side === "sell" && price <= recentLow * 0.985))
             ) {
               console.log("📈 Booking 40% Profit at near previous level...");
               await binance.createOrder(
