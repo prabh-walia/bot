@@ -815,7 +815,7 @@ const manageOpenPositions = async () => {
         `📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
       );
 
-      const risk = entryPrice * 0.011;
+      const risk = entryPrice * 0.009;
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
