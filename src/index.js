@@ -819,7 +819,7 @@ const manageOpenPositions = async () => {
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
-        side === "buy" ? entryPrice + risk * 7 : entryPrice - risk * 6;
+        side === "buy" ? entryPrice + risk * 8 : entryPrice - risk * 6;
       const positionKey = `${SYMBOL}_${entryPrice}`; // Unique key for position tracking
       console.log(finalExitTrigger, "final exit trigger");
       if (!alertStatus[positionKey]) {
