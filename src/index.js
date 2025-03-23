@@ -310,6 +310,10 @@ const main = async () => {
         secondBook = false;
         finalBook = false;
         profitBooked = false;
+        console.log("⏸ Pausing execution for 1 hour...");
+
+        await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
+
       }
     } else {
       console.log("Bot is not running. Skipping real-time price fetching.");
@@ -465,6 +469,9 @@ const getOrderPrices = async (type, lastCandle) => {
         secondBook = false;
         finalBook = false;
         profitBooked = false;
+        console.log("⏸ Pausing execution for 1 hour...");
+
+        await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
         return;
       }
       console.log("orderPlaced ->", ordersPlaced);
@@ -506,6 +513,9 @@ const placeLimitOrders = async (prices, type) => {
     secondBook = false;
     finalBook = false;
     profitBooked = false;
+    console.log("⏸ Pausing execution for 1 hour...");
+
+    await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
     return;
   }
   try {
@@ -638,6 +648,7 @@ const monitorOrderFilling = async () => {
 
     if (anyOrderFilled) {
       await manageOpenPositions();
+
       lastOrderExecuted = false;
       lastSlOrderExecuted = false;
       anyOrderFilled = false;
@@ -645,6 +656,9 @@ const monitorOrderFilling = async () => {
       secondBook = false;
       finalBook = false;
       profitBooked = false;
+      console.log("⏸ Pausing execution for 1 hour...");
+
+await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
     }
   }
 
@@ -657,6 +671,9 @@ const monitorOrderFilling = async () => {
     lastSlOrderExecuted = false;
     finalBook = false;
     profitBooked = false;
+    console.log("⏸ Pausing execution for 1 hour...");
+
+    await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
   }
 };
 
@@ -802,7 +819,7 @@ const manageOpenPositions = async () => {
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
-        side === "buy" ? entryPrice + risk * 6 : entryPrice - risk * 5;
+        side === "buy" ? entryPrice + risk * 7 : entryPrice - risk * 6;
       const positionKey = `${SYMBOL}_${entryPrice}`; // Unique key for position tracking
       console.log(finalExitTrigger, "final exit trigger");
       if (!alertStatus[positionKey]) {
