@@ -426,7 +426,7 @@ const getOrderPrices = async (type, lastCandle) => {
     const percentMove = halfway * 0.013; // 0.8% move range
 
     // Define percentage step distribution (closer to halfway at first)
-    const steps = [0.6, 0.9]; // First price closer, last price at full move
+    const steps = [0.6, 0.8]; // First price closer, last price at full move
     let orderPrices = [];
 
     if (type === "bullish") {
@@ -459,7 +459,6 @@ const getOrderPrices = async (type, lastCandle) => {
       } else {
         console.log(" oh  Position open");
         await manageOpenPositions();
-
         firstBook = false;
         lastOrderExecuted = false;
         lastSlOrderExecuted = false;
@@ -887,6 +886,7 @@ const manageOpenPositions = async () => {
                 parseFloat(p.info.positionAmt) !== 0
             );
             console.log(" 📊  Pnl>", updatedPosition?.info?.unRealizedProfit);
+            positionSize = parseFloat(updatedPosition.info.positionAmt);
             if (!updatedPosition) {
               console.log(
                 "🚨 Position closed during alert tracking. Exiting..."
