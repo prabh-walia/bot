@@ -897,6 +897,13 @@ const manageOpenPositions = async () => {
 
             // ✅ Check if position is still open
             const updatedPositions = await binance.fetchPositions();
+            if (!updatedPosition) {
+              console.log(
+                "🚨 Position closed  Exiting..."
+              );
+              return;
+            }
+    
             const updatedPosition = updatedPositions.find(
               (p) =>
                 p.info.symbol === SYMBOL.replace("/", "") &&
