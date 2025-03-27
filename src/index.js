@@ -897,18 +897,16 @@ const manageOpenPositions = async () => {
 
             // ✅ Check if position is still open
             const updatedPositions = await binance.fetchPositions();
-            if (!updatedPosition) {
-              console.log(
-                "🚨 Position closed  Exiting..."
-              );
-              return;
-            }
-    
             const updatedPosition = updatedPositions.find(
               (p) =>
                 p.info.symbol === SYMBOL.replace("/", "") &&
                 parseFloat(p.info.positionAmt) !== 0
             );
+            
+            if (!updatedPosition) {  
+              console.log("🚨 Position closed. Exiting...");
+              return;
+            }
             console.log(" 📊  Pnl>", updatedPosition?.info?.unRealizedProfit);
             positionSize = parseFloat(updatedPosition.info.positionAmt);
             if (!updatedPosition) {
