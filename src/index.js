@@ -906,6 +906,7 @@ const manageOpenPositions = async () => {
               return;
             }
             console.log(" 📊  Pnl>", updatedPosition?.info?.unRealizedProfit);
+            console.log("finalExitTrigger -", finalExitTrigger);
             positionSize = parseFloat(updatedPosition.info.positionAmt);
             if (!updatedPosition) {
               console.log(
