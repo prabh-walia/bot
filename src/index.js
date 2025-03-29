@@ -298,9 +298,8 @@ const main = async () => {
           p.info.symbol === SYMBOL.replace("/", "") &&
           parseFloat(p.info.positionAmt) !== 0
       );
-    
-      if (!position) {
 
+      if (!position) {
         await findTrades();
       } else {
         await manageOpenPositions();
@@ -310,10 +309,9 @@ const main = async () => {
         secondBook = false;
         finalBook = false;
         profitBooked = false;
-        console.log("⏸ Pausing execution for 1 hour...");
+        console.log("⏸ Pausing execution for 1 hour... 1");
 
-        await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
-
+        await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
       }
     } else {
       console.log("Bot is not running. Skipping real-time price fetching.");
@@ -469,9 +467,9 @@ const getOrderPrices = async (type, lastCandle) => {
         secondBook = false;
         finalBook = false;
         profitBooked = false;
-        console.log("⏸ Pausing execution for 1 hour...");
+        console.log("⏸ Pausing execution for 1 hour... 2");
 
-        await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
+        await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
         return;
       }
       console.log("orderPlaced ->", ordersPlaced);
@@ -513,9 +511,9 @@ const placeLimitOrders = async (prices, type) => {
     secondBook = false;
     finalBook = false;
     profitBooked = false;
-    console.log("⏸ Pausing execution for 1 hour...");
+    console.log("⏸ Pausing execution for 1 hour... 3");
 
-    await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
+    await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
     return;
   }
   try {
@@ -656,9 +654,9 @@ const monitorOrderFilling = async () => {
       secondBook = false;
       finalBook = false;
       profitBooked = false;
-      console.log("⏸ Pausing execution for 1 hour...");
+      console.log("⏸ Pausing execution for 1 hour... 4");
 
-await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
+      await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
     }
   }
 
@@ -671,9 +669,9 @@ await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
     lastSlOrderExecuted = false;
     finalBook = false;
     profitBooked = false;
-    console.log("⏸ Pausing execution for 1 hour...");
+    console.log("⏸ Pausing execution for 1 hour... 5");
 
-    await new Promise(resolve => setTimeout(resolve, 90 * 60 * 1000));
+    await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
   }
 };
 
@@ -710,7 +708,7 @@ const manageOpenPositions = async () => {
     console.log("positionn sizee->", positionSize);
     // Ensure correct price precision
     stopPrice = parseFloat(stopPrice);
-    console.log("posiitionsze->", positionSize)
+    console.log("posiitionsze->", positionSize);
     await binance.createOrder(
       SYMBOL,
       "STOP_MARKET",
@@ -902,8 +900,8 @@ const manageOpenPositions = async () => {
                 p.info.symbol === SYMBOL.replace("/", "") &&
                 parseFloat(p.info.positionAmt) !== 0
             );
-            
-            if (!updatedPosition) {  
+
+            if (!updatedPosition) {
               console.log("🚨 Position closed. Exiting...");
               return;
             }
@@ -1217,7 +1215,7 @@ async function updateStopLossOrders(positionSize, side) {
   for (let order of stopOrders) {
     totalQty += parseFloat(order.amount);
     selectedOrders.push(order);
-    
+
     if (totalQty >= Math.abs(positionSize)) {
       break; // ✅ Stop when enough orders are selected
     }
@@ -1230,18 +1228,21 @@ async function updateStopLossOrders(positionSize, side) {
 
   // ✅ Place a new stop-loss order based on the updated position
   if (selectedOrders.length > 0) {
-    const stopLossPrice = parseFloat(selectedOrders[selectedOrders.length - 1].stopPrice);
+    const stopLossPrice = parseFloat(
+      selectedOrders[selectedOrders.length - 1].stopPrice
+    );
 
     await binance.createOrder(
       SYMBOL,
       "STOP_MARKET",
       side === "buy" ? "sell" : "buy",
-      Math.abs(positionSize), 
+      Math.abs(positionSize),
       undefined,
       { stopPrice: stopLossPrice }
     );
 
-    console.log(`✅ New STOP_MARKET order placed: ${positionSize} at ${stopLossPrice}`);
+    console.log(
+      `✅ New STOP_MARKET order placed: ${positionSize} at ${stopLossPrice}`
+    );
   }
 }
-
