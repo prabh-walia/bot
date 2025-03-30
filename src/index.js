@@ -226,7 +226,7 @@ const findTrades = async () => {
           const closingPrices = ohlcv.map((candle) => candle[4]);
           const latestRSI20 = calculateRSI20(closingPrices);
           console.log("rsi ->", latestRSI20);
-          if (latestRSI20 > 60) {
+          if (latestRSI20 > 53) {
             getOrderPrices("bearish", lastCandle);
           } else {
             console.log("rsi is not above 60");
@@ -655,6 +655,7 @@ const monitorOrderFilling = async () => {
       finalBook = false;
       profitBooked = false;
       console.log("⏸ Pausing execution for 1 hour... 4");
+      await cancelAllOpenOrders();
 
       await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
     }
@@ -670,7 +671,7 @@ const monitorOrderFilling = async () => {
     finalBook = false;
     profitBooked = false;
     console.log("⏸ Pausing execution for 1 hour... 5");
-
+    await cancelAllOpenOrders();
     await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
   }
 };
@@ -921,6 +922,9 @@ const manageOpenPositions = async () => {
               (side === "sell" && price <= finalExitTrigger)
             ) {
               console.log("📈 Booking all Profit at near final exit trigger");
+              console.log("finl exit trigger -", finalExitTrigger);
+              console.log("price at trigger -", price);
+              console.log("side ->", side);
               await binance.createOrder(
                 SYMBOL,
                 "market",
