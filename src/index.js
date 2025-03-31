@@ -310,7 +310,7 @@ const main = async () => {
         finalBook = false;
         profitBooked = false;
         console.log("⏸ Pausing execution for 1 hour... 1");
-
+        await cancelAllOpenOrders();
         await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
       }
     } else {
@@ -599,8 +599,30 @@ const monitorOrderFilling = async () => {
   let anyOrderFilled = false;
   const orderStartTime = Date.now();
   const timeLimit = 100 * 60 * 1000;
+  const positions = await binance.fetchPositions();
+  const position = positions.find(
+    (p) =>
+      p.info.symbol === SYMBOL.replace("/", "") &&
+      parseFloat(p.info.positionAmt) !== 0
+  );
+  if (position) {
+    console.log("⚠️  positions already opened. Stopping monitoring orders.");
+    await manageOpenPositions();
+
+    firstBook = false;
+    lastOrderExecuted = false;
+    lastSlOrderExecuted = false;
+    secondBook = false;
+    finalBook = false;
+    profitBooked = false;
+    console.log("⏸ Pausing execution for 1 hour... 7");
+    await cancelAllOpenOrders();
+    await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
+    return;
+  }
   let openOrders = await binance.fetchOpenOrders(SYMBOL);
 
+  console.log("open order length ->", openOrders.length);
   while (openOrders.length > 0) {
     const randomDelay = Math.floor(Math.random() * (2800 - 2000 + 1)) + 2000;
     await new Promise((resolve) => setTimeout(resolve, randomDelay)); // Poll every 2 sec
@@ -917,23 +939,23 @@ const manageOpenPositions = async () => {
               delete alertStatus[positionKey];
               return;
             }
-            if (
-              (side === "buy" && price >= finalExitTrigger) ||
-              (side === "sell" && price <= finalExitTrigger)
-            ) {
-              console.log("📈 Booking all Profit at near final exit trigger");
-              console.log("finl exit trigger -", finalExitTrigger);
-              console.log("price at trigger -", price);
-              console.log("side ->", side);
-              await binance.createOrder(
-                SYMBOL,
-                "market",
-                side === "buy" ? "sell" : "buy",
-                Math.abs(positionSize)
-              );
+            // if (
+            //   (side === "buy" && price >= finalExitTrigger) ||
+            //   (side === "sell" && price <= finalExitTrigger)
+            // ) {
+            //   console.log("📈 Booking all Profit at near final exit trigger");
+            //   console.log("finl exit trigger -", finalExitTrigger);
+            //   console.log("price at trigger -", price);
+            //   console.log("side ->", side);
+            //   await binance.createOrder(
+            //     SYMBOL,
+            //     "market",
+            //     side === "buy" ? "sell" : "buy",
+            //     Math.abs(positionSize)
+            //   );
 
-              return;
-            }
+            //   return;
+            // }
 
             // ✅ If price reaches 1:3 RR, start trailing SL (only once)
             const trailingTrigger =
