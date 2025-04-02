@@ -855,7 +855,7 @@ const manageOpenPositions = async () => {
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
-        side === "buy" ? entryPrice + risk * 8 : entryPrice - risk * 6;
+        side === "buy" ? entryPrice + risk * 7 : entryPrice - risk * 6;
       const positionKey = `${SYMBOL}_${entryPrice}`; // Unique key for position tracking
       console.log(finalExitTrigger, "final exit trigger");
       if (!alertStatus[positionKey]) {
@@ -943,6 +943,25 @@ const manageOpenPositions = async () => {
               console.log("🚨 Position closed. Exiting...");
               return;
             }
+            // ⛔ Exit immediately if final exit trigger is hit (one-sided movement)
+if (
+  (side === "buy" && price >= finalExitTrigger) ||
+  (side === "sell" && price <= finalExitTrigger)
+) {
+  console.log("🏁 Final Exit Trigger Hit Directly! Closing full position...");
+  await binance.createOrder(
+    SYMBOL,
+    "market",
+    side === "buy" ? "sell" : "buy",
+    Math.abs(positionSize)
+  );
+  await cancelAllOpenOrders();
+  delete alertStatus[positionKey];
+  finalBook = true;
+  profitBooked = false;
+  return;
+}
+
             console.log(" 📊  Pnl>", updatedPosition?.info?.unRealizedProfit);
             console.log("finalExitTrigger -", finalExitTrigger);
             positionSize = parseFloat(updatedPosition.info.positionAmt);
