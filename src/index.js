@@ -314,7 +314,9 @@ const main = async () => {
         profitBooked = false;
         console.log("⏸ Pausing execution for 1 hour... 1");
         await cancelAllOpenOrders();
-        await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
+        tradeCompletedAt = Date.now();
+
+
       }
     } else {
       console.log("Bot is not running. Skipping real-time price fetching.");
@@ -471,8 +473,9 @@ const getOrderPrices = async (type, lastCandle) => {
         finalBook = false;
         profitBooked = false;
         console.log("⏸ Pausing execution for 1 hour... 2");
+        tradeCompletedAt = Date.now();
 
-        await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
+   
         return;
       }
       console.log("orderPlaced ->", ordersPlaced);
@@ -515,8 +518,9 @@ const placeLimitOrders = async (prices, type) => {
     finalBook = false;
     profitBooked = false;
     console.log("⏸ Pausing execution for 1 hour... 3");
+    tradeCompletedAt = Date.now();
 
-    await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
+
     return;
   }
   try {
@@ -620,7 +624,8 @@ const monitorOrderFilling = async () => {
     profitBooked = false;
     console.log("⏸ Pausing execution for 1 hour... 7");
     await cancelAllOpenOrders();
-    await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
+    tradeCompletedAt = Date.now();
+
     return;
   }
   let openOrders = await binance.fetchOpenOrders(SYMBOL);
@@ -681,8 +686,10 @@ const monitorOrderFilling = async () => {
       profitBooked = false;
       console.log("⏸ Pausing execution for 1 hour... 4");
       await cancelAllOpenOrders();
+      tradeCompletedAt = Date.now();
 
-      await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
+
+  
     }
   }
 
@@ -697,7 +704,9 @@ const monitorOrderFilling = async () => {
     profitBooked = false;
     console.log("⏸ Pausing execution for 1 hour... 5");
     await cancelAllOpenOrders();
-    await new Promise((resolve) => setTimeout(resolve, 90 * 60 * 1000));
+    tradeCompletedAt = Date.now();
+
+
   }
 };
 
@@ -778,7 +787,10 @@ const manageOpenPositions = async () => {
         Math.abs(positionSize) > amount * 2 &&
         (!lastOrderExecuted || !lastSlOrderExecuted)
       ) {
-        if (price > entryPrice * 1.003) {
+        if (
+          (side === "buy" && price > entryPrice * 1.003) ||
+          (side === "sell" && price < entryPrice * 0.997)
+        ) {
           let stopLossPercentage = slPercentage;
           let slSide;
           let slPrice;
