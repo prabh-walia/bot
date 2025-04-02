@@ -218,6 +218,7 @@ const findTrades = async () => {
           const latestRSI20 = calculateRSI20(closingPrices);
           if (latestRSI20 > 25) {
             goToSmallerFrame("bearish");
+            console.log("returned from smaller frame");
           } else {
             console.log("rsi is not above 25");
           }
@@ -228,6 +229,8 @@ const findTrades = async () => {
           console.log("rsi ->", latestRSI20);
           if (latestRSI20 > 53) {
             getOrderPrices("bearish", lastCandle);
+
+            console.log("returned from get order prices");
           } else {
             console.log("rsi is not above 60");
           }
@@ -396,7 +399,7 @@ const goToSmallerFrame = async (type) => {
     try {
       ordersPlaced = await placeLimitOrders(orderPrices, type);
 
-      const hasSuccessfulTrade = ordersPlaced.some(
+      const hasSuccessfulTrade = ordersPlaced?.some(
         (order) => order.status === "OPEN"
       );
 
