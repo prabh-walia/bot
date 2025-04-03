@@ -115,7 +115,7 @@ const findTrades = async () => {
       }
 
       if (Date.now() - tradeCompletedAt < 100 * 60 * 1000) {
-        console.log("Within the 10-minute cooldown period, waiting...");
+        console.log("Within the 100-minute cooldown period, waiting...");
         await new Promise((resolve) => setTimeout(resolve, 1000));
         continue;
       }
@@ -142,7 +142,7 @@ const findTrades = async () => {
       const pivotHighs = findPivotHighs(highs, leftLen, rightLen);
       const pivotLows = findPivotLows(lows, leftLen, rightLen);
       const last2PivotHighs = pivotHighs.slice(-2);
-      const last2PivotLows = pivotLows.slice(-2);
+      const last2PivotLows = pivotLows.slice(-2);nn
 
       // const response = checkBullishPatternAboveEma(filteredSwings);
       // if (response.patternMatched) {
@@ -784,7 +784,7 @@ const manageOpenPositions = async () => {
       let side = positionSize > 0 ? "buy" : "sell";
       const amount = orderQuantity * multiple;
       if (
-        Math.abs(positionSize) > amount * 2 &&
+        Math.abs(positionSize) > amount * 1.99 &&
         (!lastOrderExecuted || !lastSlOrderExecuted)
       ) {
         if (
@@ -865,12 +865,13 @@ const manageOpenPositions = async () => {
           finalExit: false,
         };
       }
-
+        console.log("2x trigger ->,", alertTrigger)
       if (
         (side === "buy" && price >= alertTrigger) ||
         (side === "sell" && price <= alertTrigger)
       ) {
-        if (!profitBooked) {
+        console.log("price after2x ->", price)
+        if (!profitBooked && Math.abs(positionSize) > amount * 1.99) {
           console.log(
             "🚀 Alert System Activated: Tracking 12 EMA for exits..."
           );
