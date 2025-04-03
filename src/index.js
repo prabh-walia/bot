@@ -142,7 +142,7 @@ const findTrades = async () => {
       const pivotHighs = findPivotHighs(highs, leftLen, rightLen);
       const pivotLows = findPivotLows(lows, leftLen, rightLen);
       const last2PivotHighs = pivotHighs.slice(-2);
-      const last2PivotLows = pivotLows.slice(-2);nn
+      const last2PivotLows = pivotLows.slice(-2);
 
       // const response = checkBullishPatternAboveEma(filteredSwings);
       // if (response.patternMatched) {
