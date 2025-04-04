@@ -795,11 +795,11 @@ const manageOpenPositions = async () => {
           let slSide;
           let slPrice;
           if (side === "buy") {
-            side = "buy";
+       
             slSide = "sell"; // Stop-market order should be the opposite
             slPrice = price * (1 - stopLossPercentage); // SL 0.5% below entry price
           } else {
-            side = "sell";
+           
             slSide = "buy"; // Stop-market order should be the opposite
             slPrice = price * (1 + stopLossPercentage); // SL 0.5% above entry price
           }
@@ -923,7 +923,7 @@ const manageOpenPositions = async () => {
 
         while (true) {
           console.log("in while after 1:2");
-
+          console.log("2x trigger ->,", alertTrigger)
           const randomDelay =
             Math.floor(Math.random() * (3940 - 3400 + 1)) + 3400;
           await new Promise((resolve) => setTimeout(resolve, randomDelay));
