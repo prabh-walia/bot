@@ -264,12 +264,13 @@ const findTrades = async () => {
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
-  "XRP/USDT": 5,
+  "XRP/USDT": 4,
   "SUI/USDT": 3,
 };
 const SL_PERCENTAGE = {
   "1h": 0.01,
   "30m": 0.007,
+  
   "2h": 0.01,
   "4h": 0.03,
 };
