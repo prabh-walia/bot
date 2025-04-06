@@ -316,7 +316,7 @@ const main = async () => {
         console.log("⏸ Pausing execution for 1 hour... 1");
         await cancelAllOpenOrders();
         tradeCompletedAt = Date.now();
-
+        await findTrades();
 
       }
     } else {
@@ -770,7 +770,7 @@ async function ensureStopMarketExists() {
     const positionSize = parseFloat(position.info.positionAmt);
     const entryPrice = parseFloat(position.info.entryPrice);
     const side = positionSize > 0 ? "buy" : "sell";
-    const stopPrice = side === "buy" ? entryPrice * 0.988 : entryPrice * 1.013;
+    const stopPrice = side === "buy" ? entryPrice * 0.992 : entryPrice * 1.008;
 
     await binance.createOrder(
       SYMBOL,
@@ -786,8 +786,8 @@ async function ensureStopMarketExists() {
 
 async function handleAdditionalEntry(price, entryPrice, side, amount) {
   const shouldTrigger =
-    (side === "buy" && price > entryPrice * 1.003) ||
-    (side === "sell" && price < entryPrice * 0.997);
+    (side === "buy" && price > entryPrice * 1.002) ||
+    (side === "sell" && price < entryPrice * 0.998);
 
   if (!shouldTrigger) return;
 
