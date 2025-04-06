@@ -716,18 +716,28 @@ async function manageOpenPositions() {
         return;
       }
 
+      console.log(" 📊  Pnl>", position?.info?.unRealizedProfit);
+      console.log("price ->", price)
+
+
+
       let positionSize = parseFloat(position.info.positionAmt);
       let entryPrice = parseFloat(position.info.entryPrice);
       const side = positionSize > 0 ? "buy" : "sell";
       const amount = orderQuantity * multiple;
 
-      if (Math.abs(positionSize) > amount * 1.99 && (!lastOrderExecuted || !lastSlOrderExecuted)) {
+      if (Math.abs(positionSize) > amount * 1.99 && (!lastOrderExecuted || !lastSlOrderExecuted) && Math.abs(positionSize)< amount * 3.4) {
         await handleAdditionalEntry(price, entryPrice, side, amount);
       }
 
-      const risk = entryPrice * 0.009;
+      const risk = entryPrice * 0.007;
       const alertTrigger = side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
-      const finalExitTrigger = side === "buy" ? entryPrice + risk * 7 : entryPrice - risk * 6;
+      const finalExitTrigger = side === "buy" ? entryPrice + risk * 6 : entryPrice - risk * 5;
+
+      console.log(
+        ` 📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
+      );
+      console.log("finalExitTrigger -", finalExitTrigger);
       const positionKey = `${SYMBOL}_${entryPrice}`;
 
       if (!alertStatus[positionKey]) {
@@ -819,11 +829,12 @@ async function handleInitialProfit(positionSize, side) {
 async function monitorAfterAlert(positionKey, entryPrice, side, risk, finalExitTrigger) {
   while (true) {
     await delay(Math.floor(Math.random() * (3900 - 3400 + 1)) + 3400);
-
+console.log("in monitor after alert")
     const updatedPosition = await getActivePosition();
     if (!updatedPosition) return;
 
     let positionSize = parseFloat(updatedPosition.info.positionAmt);
+    let entryPrice = updatedPosition.info.entryPrice
 
     if ((side === "buy" && price >= finalExitTrigger) || (side === "sell" && price <= finalExitTrigger)) {
       await binance.createOrder(SYMBOL, "market", side === "buy" ? "sell" : "buy", Math.abs(positionSize));
@@ -832,6 +843,12 @@ async function monitorAfterAlert(positionKey, entryPrice, side, risk, finalExitT
       console.log("🏁 Final Trigger Hit. Position closed.");
       return;
     }
+
+    console.log(
+      ` 📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
+    );
+    console.log(" 📊  Pnl>", updatedPosition?.info?.unRealizedProfit);
+    console.log("price ->", price)
 
     await handleTrailingStop(entryPrice, side, risk, positionSize, positionKey);
     await handleMultiStageProfitBooking(updatedPosition, side, positionKey);
@@ -890,7 +907,7 @@ async function handleMultiStageProfitBooking(updatedPosition, side, positionKey)
     ((side === "buy" && price >= recentHigh * 1.015) || (side === "sell" && price <= recentLow * 0.985))) {
     await binance.createOrder(SYMBOL, "market", side === "buy" ? "sell" : "buy", Math.abs(positionSize) * 0.7);
     secondBook = true;
-    console.log("📈 Booked 40% profit after second retest");
+    console.log("📈 Booked 70% profit after second retest");
     await updateStopLossOrders(positionSize, side);
   }
 
