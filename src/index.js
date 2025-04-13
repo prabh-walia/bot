@@ -270,7 +270,7 @@ const MIN_ORDER_QUANTITY = {
 const SL_PERCENTAGE = {
   "1h": 0.01,
   "30m": 0.007,
-  
+
   "2h": 0.01,
   "4h": 0.03,
 };
@@ -317,7 +317,6 @@ const main = async () => {
         await cancelAllOpenOrders();
         tradeCompletedAt = Date.now();
         await findTrades();
-
       }
     } else {
       console.log("Bot is not running. Skipping real-time price fetching.");
@@ -476,7 +475,6 @@ const getOrderPrices = async (type, lastCandle) => {
         console.log("⏸ Pausing execution for 1 hour... 2");
         tradeCompletedAt = Date.now();
 
-   
         return;
       }
       console.log("orderPlaced ->", ordersPlaced);
@@ -520,7 +518,6 @@ const placeLimitOrders = async (prices, type) => {
     profitBooked = false;
     console.log("⏸ Pausing execution for 1 hour... 3");
     tradeCompletedAt = Date.now();
-
 
     return;
   }
@@ -626,7 +623,7 @@ const monitorOrderFilling = async () => {
     lastSlOrderExecuted = false;
   };
 
-  const handlePause = async (label = '') => {
+  const handlePause = async (label = "") => {
     console.log(`⏸ Pausing execution for 1 hour... ${label}`);
     await cancelAllOpenOrders();
     tradeCompletedAt = Date.now();
@@ -637,7 +634,7 @@ const monitorOrderFilling = async () => {
     console.log("⚠️  Position already opened. Stopping monitoring orders.");
     await manageOpenPositions();
     resetState();
-    await handlePause('initial position');
+    await handlePause("initial position");
     return;
   }
 
@@ -645,7 +642,7 @@ const monitorOrderFilling = async () => {
   console.log("open order length ->", openOrders.length);
 
   while (openOrders.length > 0) {
-    const randomDelay = Math.floor(Math.random() * (800)) + 2000;
+    const randomDelay = Math.floor(Math.random() * 800) + 2000;
     await new Promise((resolve) => setTimeout(resolve, randomDelay));
 
     if (Date.now() - orderStartTime > timeLimit) {
@@ -659,14 +656,25 @@ const monitorOrderFilling = async () => {
 
     for (const order of openOrders) {
       try {
-        const orderStatus = await binance.fetchOrder(order.info.orderId, SYMBOL);
+        const orderStatus = await binance.fetchOrder(
+          order.info.orderId,
+          SYMBOL
+        );
         const status = orderStatus.info?.status;
 
         if (status === "FILLED") {
-          console.log(`🎯 Order FILLED: ${order.info.side.toUpperCase()} at ${order.info.price}`);
+          console.log(
+            `🎯 Order FILLED: ${order.info.side.toUpperCase()} at ${
+              order.info.price
+            }`
+          );
           anyOrderFilled = true;
         } else if (status === "CANCELED") {
-          console.log(`❌ Order CANCELED: ${order.info.side.toUpperCase()} at ${order.info.price}`);
+          console.log(
+            `❌ Order CANCELED: ${order.info.side.toUpperCase()} at ${
+              order.info.price
+            }`
+          );
         } else {
           console.log(`⏳ Order still OPEN at ${order.info.price}...`);
           updatedOrders.push(order);
@@ -681,7 +689,7 @@ const monitorOrderFilling = async () => {
     if (anyOrderFilled) {
       await manageOpenPositions();
       resetState();
-      await handlePause('filled-order');
+      await handlePause("filled-order");
     }
   }
 
@@ -690,10 +698,9 @@ const monitorOrderFilling = async () => {
   if (anyOrderFilled) {
     await manageOpenPositions();
     resetState();
-    await handlePause('final pass');
+    await handlePause("final pass");
   }
 };
-
 
 const alertStatus = {}; // Store alert status for different positions
 
@@ -717,22 +724,26 @@ async function manageOpenPositions() {
       }
 
       console.log(" 📊  Pnl>", position?.info?.unRealizedProfit);
-      console.log("price ->", price)
-
-
+      console.log("price ->", price);
 
       let positionSize = parseFloat(position.info.positionAmt);
       let entryPrice = parseFloat(position.info.entryPrice);
       const side = positionSize > 0 ? "buy" : "sell";
       const amount = orderQuantity * multiple;
 
-      if (Math.abs(positionSize) > amount * 1.99 && (!lastOrderExecuted || !lastSlOrderExecuted) && Math.abs(positionSize)< amount * 3.4) {
+      if (
+        Math.abs(positionSize) > amount * 1.99 &&
+        (!lastOrderExecuted || !lastSlOrderExecuted) &&
+        Math.abs(positionSize) < amount * 3.4
+      ) {
         await handleAdditionalEntry(price, entryPrice, side, amount);
       }
 
       const risk = entryPrice * 0.007;
-      const alertTrigger = side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
-      const finalExitTrigger = side === "buy" ? entryPrice + risk * 6 : entryPrice - risk * 5;
+      const alertTrigger =
+        side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
+      const finalExitTrigger =
+        side === "buy" ? entryPrice + risk * 8 : entryPrice - risk * 7;
 
       console.log(
         ` 📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
@@ -749,9 +760,21 @@ async function manageOpenPositions() {
         };
       }
 
-      if ((side === "buy" && price >= alertTrigger) || (side === "sell" && price <= alertTrigger)) {
-        await handleInitialProfit(positionSize, side);
-        await monitorAfterAlert(positionKey, entryPrice, side, risk, finalExitTrigger);
+      if (
+        (side === "buy" && price >= alertTrigger) ||
+        (side === "sell" && price <= alertTrigger)
+      ) {
+        if (Math.abs(positionSize) > amount * 1.99) {
+          await handleInitialProfit(positionSize, side);
+        }
+
+        await monitorAfterAlert(
+          positionKey,
+          entryPrice,
+          side,
+          risk,
+          finalExitTrigger
+        );
       }
     } catch (err) {
       console.error("❌ Error fetching position:", err);
@@ -762,7 +785,9 @@ async function manageOpenPositions() {
 
 async function ensureStopMarketExists() {
   const openOrders = await binance.fetchOpenOrders(SYMBOL);
-  const stopOrders = openOrders.filter((order) => order.info.type === "STOP_MARKET");
+  const stopOrders = openOrders.filter(
+    (order) => order.info.type === "STOP_MARKET"
+  );
 
   if (stopOrders.length === 0) {
     const position = await getActivePosition();
@@ -792,7 +817,8 @@ async function handleAdditionalEntry(price, entryPrice, side, amount) {
   if (!shouldTrigger) return;
 
   const slSide = side === "buy" ? "sell" : "buy";
-  const slPrice = side === "buy" ? price * (1 - slPercentage) : price * (1 + slPercentage);
+  const slPrice =
+    side === "buy" ? price * (1 - slPercentage) : price * (1 + slPercentage);
 
   try {
     if (!lastOrderExecuted) {
@@ -801,7 +827,14 @@ async function handleAdditionalEntry(price, entryPrice, side, amount) {
       console.log(`✅ Additional market order placed (${side}) at ${price}`);
     }
     if (!lastSlOrderExecuted) {
-      await binance.createOrder(SYMBOL, "STOP_MARKET", slSide, amount * 2, undefined, { stopPrice: slPrice });
+      await binance.createOrder(
+        SYMBOL,
+        "STOP_MARKET",
+        slSide,
+        amount * 2,
+        undefined,
+        { stopPrice: slPrice }
+      );
       lastSlOrderExecuted = true;
       console.log(`🛑 SL order placed (${slSide}) at ${slPrice}`);
     }
@@ -823,21 +856,38 @@ async function handleInitialProfit(positionSize, side) {
   }
   const updatedPosition = await getActivePosition();
   if (!updatedPosition) return;
-  await updateStopLossOrders(parseFloat(updatedPosition.info.positionAmt), side);
+  await updateStopLossOrders(
+    parseFloat(updatedPosition.info.positionAmt),
+    side
+  );
 }
 
-async function monitorAfterAlert(positionKey, entryPrice, side, risk, finalExitTrigger) {
+async function monitorAfterAlert(
+  positionKey,
+  entryPrice,
+  side,
+  risk,
+  finalExitTrigger
+) {
   while (true) {
     await delay(Math.floor(Math.random() * (3900 - 3400 + 1)) + 3400);
-console.log("in monitor after alert")
+    console.log("in monitor after alert");
     const updatedPosition = await getActivePosition();
     if (!updatedPosition) return;
 
     let positionSize = parseFloat(updatedPosition.info.positionAmt);
-    let entryPrice = updatedPosition.info.entryPrice
+    let entryPrice = updatedPosition.info.entryPrice;
 
-    if ((side === "buy" && price >= finalExitTrigger) || (side === "sell" && price <= finalExitTrigger)) {
-      await binance.createOrder(SYMBOL, "market", side === "buy" ? "sell" : "buy", Math.abs(positionSize));
+    if (
+      (side === "buy" && price >= finalExitTrigger) ||
+      (side === "sell" && price <= finalExitTrigger)
+    ) {
+      await binance.createOrder(
+        SYMBOL,
+        "market",
+        side === "buy" ? "sell" : "buy",
+        Math.abs(positionSize)
+      );
       await cancelAllOpenOrders();
       delete alertStatus[positionKey];
       console.log("🏁 Final Trigger Hit. Position closed.");
@@ -848,28 +898,47 @@ console.log("in monitor after alert")
       ` 📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
     );
     console.log(" 📊  Pnl>", updatedPosition?.info?.unRealizedProfit);
-    console.log("price ->", price)
+    console.log("price ->", price);
 
     await handleTrailingStop(entryPrice, side, risk, positionSize, positionKey);
     await handleMultiStageProfitBooking(updatedPosition, side, positionKey);
   }
 }
 
-async function handleTrailingStop(entryPrice, side, risk, positionSize, positionKey) {
-  const trailingTrigger = side === "buy" ? entryPrice + risk * 2.5 : entryPrice - risk * 2.3;
-  if (!alertStatus[positionKey].trailingSlTriggered &&
-    ((side === "buy" && price >= trailingTrigger) || (side === "sell" && price <= trailingTrigger))) {
-
+async function handleTrailingStop(
+  entryPrice,
+  side,
+  risk,
+  positionSize,
+  positionKey
+) {
+  const trailingTrigger =
+    side === "buy" ? entryPrice + risk * 2.5 : entryPrice - risk * 2.3;
+  if (
+    !alertStatus[positionKey].trailingSlTriggered &&
+    ((side === "buy" && price >= trailingTrigger) ||
+      (side === "sell" && price <= trailingTrigger))
+  ) {
     const openOrders = await binance.fetchOpenOrders(SYMBOL);
-    const stopOrders = openOrders.filter((order) => order.info.type === "STOP_MARKET");
+    const stopOrders = openOrders.filter(
+      (order) => order.info.type === "STOP_MARKET"
+    );
     for (let order of stopOrders) {
       const oldSL = parseFloat(order.stopPrice);
       const initialDistance = Math.abs(entryPrice - oldSL);
       const stopMoveAmount = initialDistance * 0.4;
-      const newSL = side === "buy" ? oldSL + stopMoveAmount : oldSL - stopMoveAmount;
+      const newSL =
+        side === "buy" ? oldSL + stopMoveAmount : oldSL - stopMoveAmount;
 
       await binance.cancelOrder(order.id, SYMBOL);
-      await binance.createOrder(SYMBOL, "STOP_MARKET", side === "buy" ? "sell" : "buy", Math.abs(positionSize), undefined, { stopPrice: newSL });
+      await binance.createOrder(
+        SYMBOL,
+        "STOP_MARKET",
+        side === "buy" ? "sell" : "buy",
+        Math.abs(positionSize),
+        undefined,
+        { stopPrice: newSL }
+      );
       console.log(`🔄 SL Trailed from ${oldSL} → ${newSL}`);
     }
 
@@ -877,43 +946,82 @@ async function handleTrailingStop(entryPrice, side, risk, positionSize, position
   }
 }
 
-async function handleMultiStageProfitBooking(updatedPosition, side, positionKey) {
+async function handleMultiStageProfitBooking(
+  updatedPosition,
+  side,
+  positionKey
+) {
   const { ohlcv, smallEma } = await fetchAndAnalyzeCandles("small");
   const last10 = ohlcv.slice(-10);
   const recentHigh = last10.reduce((sum, c) => sum + c[2], 0) / last10.length;
   const recentLow = last10.reduce((sum, c) => sum + c[3], 0) / last10.length;
   const positionSize = parseFloat(updatedPosition.info.positionAmt);
 
-  if (!alertStatus[positionKey].first && ((side === "buy" && price < smallEma) || (side === "sell" && price > smallEma))) {
+  if (
+    !alertStatus[positionKey].first &&
+    ((side === "buy" && price < smallEma) ||
+      (side === "sell" && price > smallEma))
+  ) {
     alertStatus[positionKey].first = true;
     console.log("⚠️ First EMA Break detected");
   }
 
-  if (alertStatus[positionKey].first && !firstBook &&
-    ((side === "buy" && price >= recentHigh * 1.005) || (side === "sell" && price <= recentLow * 0.995))) {
-    await binance.createOrder(SYMBOL, "market", side === "buy" ? "sell" : "buy", Math.abs(positionSize) * 0.3);
+  if (
+    alertStatus[positionKey].first &&
+    !firstBook &&
+    ((side === "buy" && price >= recentHigh * 1.005) ||
+      (side === "sell" && price <= recentLow * 0.995))
+  ) {
+    await binance.createOrder(
+      SYMBOL,
+      "market",
+      side === "buy" ? "sell" : "buy",
+      Math.abs(positionSize) * 0.3
+    );
     firstBook = true;
     console.log("📈 Booked 30% profit after first retest");
     await updateStopLossOrders(positionSize, side);
   }
 
-  if (!alertStatus[positionKey].second && firstBook &&
-    ((side === "buy" && price < smallEma) || (side === "sell" && price > smallEma))) {
+  if (
+    !alertStatus[positionKey].second &&
+    firstBook &&
+    ((side === "buy" && price < smallEma) ||
+      (side === "sell" && price > smallEma))
+  ) {
     alertStatus[positionKey].second = true;
     console.log("⚠️ Second EMA Break detected");
   }
 
-  if (alertStatus[positionKey].second && !secondBook &&
-    ((side === "buy" && price >= recentHigh * 1.015) || (side === "sell" && price <= recentLow * 0.985))) {
-    await binance.createOrder(SYMBOL, "market", side === "buy" ? "sell" : "buy", Math.abs(positionSize) * 0.7);
+  if (
+    alertStatus[positionKey].second &&
+    !secondBook &&
+    ((side === "buy" && price >= recentHigh * 1.015) ||
+      (side === "sell" && price <= recentLow * 0.985))
+  ) {
+    await binance.createOrder(
+      SYMBOL,
+      "market",
+      side === "buy" ? "sell" : "buy",
+      Math.abs(positionSize) * 0.7
+    );
     secondBook = true;
     console.log("📈 Booked 70% profit after second retest");
     await updateStopLossOrders(positionSize, side);
   }
 
-  if (!alertStatus[positionKey].finalExit && secondBook &&
-    ((side === "buy" && price < smallEma) || (side === "sell" && price > smallEma))) {
-    await binance.createOrder(SYMBOL, "market", side === "buy" ? "sell" : "buy", Math.abs(positionSize));
+  if (
+    !alertStatus[positionKey].finalExit &&
+    secondBook &&
+    ((side === "buy" && price < smallEma) ||
+      (side === "sell" && price > smallEma))
+  ) {
+    await binance.createOrder(
+      SYMBOL,
+      "market",
+      side === "buy" ? "sell" : "buy",
+      Math.abs(positionSize)
+    );
     await cancelAllOpenOrders();
     delete alertStatus[positionKey];
     finalBook = true;
@@ -928,10 +1036,11 @@ function delay(ms) {
 async function getActivePosition() {
   const positions = await binance.fetchPositions();
   return positions.find(
-    (p) => p.info.symbol === SYMBOL.replace("/", "") && parseFloat(p.info.positionAmt) !== 0
+    (p) =>
+      p.info.symbol === SYMBOL.replace("/", "") &&
+      parseFloat(p.info.positionAmt) !== 0
   );
 }
-
 
 const cancelAllOpenOrders = async () => {
   try {
