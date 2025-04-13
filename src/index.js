@@ -268,7 +268,7 @@ const MIN_ORDER_QUANTITY = {
   "SUI/USDT": 3,
 };
 const SL_PERCENTAGE = {
-  "1h": 0.01,
+  "1h": 0.009,
   "30m": 0.007,
 
   "2h": 0.01,
@@ -286,6 +286,7 @@ const main = async () => {
     orderQuantity = MIN_ORDER_QUANTITY[SYMBOL] || 1;
     const timeframe = status.trendStatus?.sourceTimeframe;
     slPercentage = SL_PERCENTAGE[timeframe] || 0.014;
+    console.log("slpercentage ->", slPercentage);
 
     console.log("minimum Quantity->", orderQuantity);
     console.log("multiple ->", multiple);
