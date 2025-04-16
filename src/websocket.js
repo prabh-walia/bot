@@ -40,7 +40,7 @@ const initWebSocket = (symbol) => {
   ws.on("close", () => {
     console.log("WebSocket connection closed");
     ws = null;
-    initWebSocket("btcusdt");
+    initWebSocket(symbol);
   });
 };
 
