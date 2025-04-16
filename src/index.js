@@ -80,6 +80,7 @@ let profitTrades = 0;
 let totalTrades = 0;
 let totalFees = 0;
 let tradeCompletedAt = 0;
+let initialProfitBooked = false;
 
 const getRandomDelay = () => Math.floor(Math.random() * (190 - 60 + 1)) + 100;
 
@@ -765,7 +766,8 @@ async function manageOpenPositions() {
         (side === "buy" && price >= alertTrigger) ||
         (side === "sell" && price <= alertTrigger)
       ) {
-        if (Math.abs(positionSize) > amount * 1.99) {
+        if (Math.abs(positionSize) > amount * 1.99 && !initialProfitBooked) {
+          initialProfitBooked = true;
           await handleInitialProfit(positionSize, side);
         }
 
