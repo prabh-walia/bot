@@ -738,7 +738,7 @@ async function manageOpenPositions() {
         (!lastOrderExecuted || !lastSlOrderExecuted) &&
         Math.abs(positionSize) < amount * 3.4
       ) {
-        await handleAdditionalEntry(price, entryPrice, side, amount);
+        await handleAdditionalEntry( entryPrice, side, amount);
       }
 
       const risk = entryPrice * 0.007;
@@ -812,11 +812,12 @@ async function ensureStopMarketExists() {
   }
 }
 
-async function handleAdditionalEntry(price, entryPrice, side, amount) {
+async function handleAdditionalEntry( entryPrice, side, amount) {
+
   const shouldTrigger =
     (side === "buy" && price > entryPrice * 1.002) ||
     (side === "sell" && price < entryPrice * 0.998);
-
+ console.log(" in handleAdditionalEntr y ", price);
   if (!shouldTrigger) return;
 
   const slSide = side === "buy" ? "sell" : "buy";
@@ -916,7 +917,7 @@ async function handleTrailingStop(
   positionKey
 ) {
   const trailingTrigger =
-    side === "buy" ? entryPrice + risk * 2.5 : entryPrice - risk * 2.3;
+    side === "buy" ? entryPrice + risk * 2.3 : entryPrice - risk * 2.1;
   if (
     !alertStatus[positionKey].trailingSlTriggered &&
     ((side === "buy" && price >= trailingTrigger) ||
