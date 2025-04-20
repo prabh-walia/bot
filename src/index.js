@@ -272,7 +272,7 @@ const SL_PERCENTAGE = {
   "1h": 0.009,
   "30m": 0.007,
 
-  "2h": 0.01,
+  "2h": 0.011,
   "4h": 0.03,
 };
 
@@ -363,7 +363,7 @@ const goToSmallerFrame = async (type) => {
 
     const open = lastCandle[1];
     const close = lastCandle[4];
-    const percentMove = close * 0.009; // 0.6% move range
+    const percentMove = close * 0.011; // 0.6% move range
 
     const steps = [0.4, 0.7];
     let orderPrices = [];
@@ -432,7 +432,7 @@ const getOrderPrices = async (type, lastCandle) => {
     const high = lastCandle[2]; // High price
     const low = lastCandle[3]; // Low price
     const halfway = (high + low) / 2; // Mid price of the candle
-    const percentMove = halfway * 0.01; // 0.8% move range
+    const percentMove = halfway * 0.012; // 0.8% move range
 
     // Define percentage step distribution (closer to halfway at first)
     const steps = [0.6, 0.8]; // First price closer, last price at full move
@@ -738,7 +738,7 @@ async function manageOpenPositions() {
         (!lastOrderExecuted || !lastSlOrderExecuted) &&
         Math.abs(positionSize) < amount * 3.4
       ) {
-        await handleAdditionalEntry( entryPrice, side, amount);
+        await handleAdditionalEntry(entryPrice, side, amount);
       }
 
       const risk = entryPrice * 0.007;
@@ -812,12 +812,11 @@ async function ensureStopMarketExists() {
   }
 }
 
-async function handleAdditionalEntry( entryPrice, side, amount) {
-
+async function handleAdditionalEntry(entryPrice, side, amount) {
   const shouldTrigger =
     (side === "buy" && price > entryPrice * 1.002) ||
     (side === "sell" && price < entryPrice * 0.998);
- console.log(" in handleAdditionalEntr y ", price);
+  console.log(" in handleAdditionalEntr y ", price);
   if (!shouldTrigger) return;
 
   const slSide = side === "buy" ? "sell" : "buy";
