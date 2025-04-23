@@ -13,15 +13,7 @@ import {
 let trend;
 import { findTrend } from "./trendFinder.js";
 import { getRealTimePrice } from "./getPrice.js";
-import {
-  isBullishEngulfing,
-  isBearishEngulfing,
-  isBullishHammer,
-  isBearishHammer,
-  isInsideCandle,
-  isBearishHaramiPattern,
-  isBullishHaramiPattern,
-} from "./patterns.js";
+
 import { placeOrder, monitorOrders } from "./trade.js";
 import { binance } from "./binanceClient.js";
 import { Status } from "./model.js";
@@ -35,11 +27,6 @@ import {
   BIGGER_TIMEFRAME,
 } from "./config.js";
 import {
-  getQuantity,
-  getSupportAndResistanceZones,
-  validateTradeConditionBearish,
-  validateTradeConditionBullish,
-  findSwings,
   findPivotHighs,
   findPivotLows,
   checkBullishPatternAboveEma,
@@ -56,29 +43,18 @@ let firstBook = false;
 let secondBook = false;
 let finalBook = false;
 let hasLoggedFindingTrades = false;
-let patternFound = false;
-let fallbackTradeActive = false;
-let BullishValidated = false;
-let BearishValidated = false;
-let patterns = [];
+let overallTrend;
 let profitBooked = false;
+let isTrueTrend = false;
 let SYMBOL;
 let orderQuantity;
 let multiple;
 let lastOrderExecuted = false;
 let lastSlOrderExecuted = false;
 let slPercentage;
-let BullishPatternFound = false;
-let BearishPatternFound = false;
-let patternType;
-let totalProfit = 0;
-let totalLoss = 0;
+
 let ordersPlaced = [];
-let isBullishTrade = false;
-let isBearishTrade = false;
-let profitTrades = 0;
-let totalTrades = 0;
-let totalFees = 0;
+
 let tradeCompletedAt = 0;
 let initialProfitBooked = false;
 
@@ -168,9 +144,14 @@ const findTrades = async () => {
       } else {
         trend = await findTrend();
       }
+
       console.log("trend ->", trend);
       console.log("Trend ->", trend);
-
+      if (trend === overallTrend) {
+        isTrueTrend = true;
+      } else {
+        isTrueTrend = false;
+      }
       if (trend === "bullish") {
         const result = checkLastCandle(lastCandle, smallEma);
 
@@ -179,7 +160,7 @@ const findTrades = async () => {
           const closingPrices = ohlcv.map((candle) => candle[4]);
           const latestRSI20 = calculateRSI20(closingPrices);
 
-          if (latestRSI20 < 80) {
+          if (latestRSI20 < 90) {
             goToSmallerFrame("bullish");
           } else {
             console.log("❌ RSI is not below 80. No order placement.");
@@ -217,7 +198,7 @@ const findTrades = async () => {
           const closingPrices = ohlcv.map((candle) => candle[4]);
           console.log("last candle is beairhs and below EMA");
           const latestRSI20 = calculateRSI20(closingPrices);
-          if (latestRSI20 > 25) {
+          if (latestRSI20 > 15) {
             goToSmallerFrame("bearish");
             console.log("returned from smaller frame");
           } else {
@@ -281,6 +262,7 @@ const main = async () => {
     const status = await Status.findOne();
 
     SYMBOL = convertSymbol(status.symbol);
+    overallTrend = await findTrend();
     multiple = status.orderMultiple;
 
     console.log("symbol is ->", SYMBOL);
@@ -500,6 +482,10 @@ const getOrderPrices = async (type, lastCandle) => {
 
 const placeLimitOrders = async (prices, type) => {
   const amount = orderQuantity * multiple * 1.1; // Order quantity
+  if (!isTrueTrend) {
+    console.log("its true trend");
+    amount = amount / 2;
+  }
   const stopLossPercentage = slPercentage;
   let orderResults = [];
   const positions = await binance.fetchPositions();
@@ -732,6 +718,9 @@ async function manageOpenPositions() {
       let entryPrice = parseFloat(position.info.entryPrice);
       const side = positionSize > 0 ? "buy" : "sell";
       const amount = orderQuantity * multiple;
+      if (!isTrueTrend) {
+        amount = amount / 2;
+      }
 
       if (
         Math.abs(positionSize) > amount * 1.99 &&
