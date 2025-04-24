@@ -729,12 +729,15 @@ async function manageOpenPositions() {
       console.log("price ->", price);
 
       let positionSize = parseFloat(position.info.positionAmt);
+      console.log("position size ->", positionSize);
       let entryPrice = parseFloat(position.info.entryPrice);
       const side = positionSize > 0 ? "buy" : "sell";
       let amount = orderQuantity * multiple;
+      console.log('IS TRUE TREND ->', isTrueTrend);
       if (!isTrueTrend) {
         amount = amount / 2;
       }
+      console.log("amount ->", amount);
 
       if (
         Math.abs(positionSize) > amount * 1.99 &&
