@@ -582,7 +582,7 @@ const monitorOrderFilling = async () => {
   console.log("📡 Monitoring Orders for Execution...");
   let anyOrderFilled = false;
   const orderStartTime = Date.now();
-  const timeLimit = 100 * 60 * 1000;
+  const timeLimit = 80 * 60 * 1000;
 
   const isPositionOpen = async () => {
     const positions = await binance.fetchPositions();
