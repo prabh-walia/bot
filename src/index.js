@@ -345,7 +345,7 @@ const goToSmallerFrame = async (type) => {
 
     const open = lastCandle[1];
     const close = lastCandle[4];
-    const percentMove = close * 0.011; // 0.6% move range
+    const percentMove = close * 0.011; // 1.1% move range
 
     const steps = [0.3, 0.7];
     let orderPrices = [];
@@ -373,25 +373,25 @@ const goToSmallerFrame = async (type) => {
         console.log(`🟢 Bullish Zone from ${base} to ${upperBound}`);
       }
     } else {
-      if(close > open) {
-      const base = close * 1.005;
-      const upperBound = base + percentMove;
-      orderPrices = [
-        base + percentMove * steps[0],
-        base + percentMove * steps[1],
-        upperBound,
-      ];
-      console.log(`🟢 Bullish Zone from ${base} to ${upperBound}`);
-    }
-    else {
-      const base = close * 1.009;
-      const lowerBound = base - percentMove;
-      orderPrices = [
-        base - percentMove * steps[0],
-        base - percentMove * steps[1],
-        lowerBound,
-      ];
-      console.log(`🔴 Bearish Zone from ${base} to ${lowerBound}`);
+      if (close > open) {
+        const base = close * 1.005;
+        const upperBound = base + percentMove;
+        orderPrices = [
+          base + percentMove * steps[0],
+          base + percentMove * steps[1],
+          upperBound,
+        ];
+        console.log(`🟢 Bullish Zone from ${base} to ${upperBound}`);
+      } else {
+        const base = close * 1.009;
+        const lowerBound = base - percentMove;
+        orderPrices = [
+          base - percentMove * steps[0],
+          base - percentMove * steps[1],
+          lowerBound,
+        ];
+        console.log(`🔴 Bearish Zone from ${base} to ${lowerBound}`);
+      }
     }
 
     console.log("Order Prices:", orderPrices);
@@ -733,7 +733,7 @@ async function manageOpenPositions() {
       let entryPrice = parseFloat(position.info.entryPrice);
       const side = positionSize > 0 ? "buy" : "sell";
       let amount = orderQuantity * multiple;
-      console.log('IS TRUE TREND ->', isTrueTrend);
+      console.log("IS TRUE TREND ->", isTrueTrend);
       if (!isTrueTrend) {
         amount = amount / 2;
       }
