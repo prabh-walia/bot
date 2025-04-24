@@ -832,10 +832,10 @@ async function handleInitialProfit(positionSize, side) {
       SYMBOL,
       "market",
       side === "buy" ? "sell" : "buy",
-      Math.abs(positionSize) * 0.3
+      Math.abs(positionSize) * 0.25
     );
     profitBooked = true;
-    console.log("💰 Booked 30% profit at 1:2 RR.");
+    console.log("💰 Booked 25% profit at 1:2 RR.");
   }
   const updatedPosition = await getActivePosition();
   if (!updatedPosition) return;
