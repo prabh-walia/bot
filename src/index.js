@@ -472,7 +472,7 @@ const getOrderPrices = async (type, lastCandle) => {
 };
 
 const placeLimitOrders = async (prices, type) => {
-  const amount = orderQuantity * multiple * 1.1; // Order quantity
+  let amount = orderQuantity * multiple * 1.1; // Order quantity
   if (!isTrueTrend) {
     console.log("its true trend");
     amount = amount / 2;
@@ -708,7 +708,7 @@ async function manageOpenPositions() {
       let positionSize = parseFloat(position.info.positionAmt);
       let entryPrice = parseFloat(position.info.entryPrice);
       const side = positionSize > 0 ? "buy" : "sell";
-      const amount = orderQuantity * multiple;
+      let amount = orderQuantity * multiple;
       if (!isTrueTrend) {
         amount = amount / 2;
       }
