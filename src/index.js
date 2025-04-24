@@ -314,7 +314,8 @@ main();
 function checkLastCandle(candle, ema) {
   const open = candle[1];
   const close = candle[4];
-
+  console.log("open ->", open);
+  console.log("close ->", close);
   const isBullish = close > open;
   const isBearish = close < open;
 
