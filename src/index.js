@@ -160,10 +160,10 @@ const findTrades = async () => {
           const closingPrices = ohlcv.map((candle) => candle[4]);
           const latestRSI20 = calculateRSI20(closingPrices);
 
-          if (latestRSI20 < 90) {
+          if (latestRSI20 < 84) {
             goToSmallerFrame("bullish");
           } else {
-            console.log("❌ RSI is not below 80. No order placement.");
+            console.log("❌ RSI is not below 84. No order placement.");
           }
         } else if (result.isBullish) {
           console.log("last candle is not bullish or not above");
@@ -198,7 +198,7 @@ const findTrades = async () => {
           const closingPrices = ohlcv.map((candle) => candle[4]);
           console.log("last candle is beairhs and below EMA");
           const latestRSI20 = calculateRSI20(closingPrices);
-          if (latestRSI20 > 15) {
+          if (latestRSI20 > 20) {
             goToSmallerFrame("bearish");
             console.log("returned from smaller frame");
           } else {
@@ -347,37 +347,28 @@ const goToSmallerFrame = async (type) => {
     const close = lastCandle[4];
     const percentMove = close * 0.011; // 0.6% move range
 
-    const steps = [0.4, 0.7];
+    const steps = [0.3, 0.7];
     let orderPrices = [];
 
     if (type === "bullish") {
-      if (close < open) {
-        // Bearish candle found
-        const lowerBound = close - percentMove;
-        orderPrices = [
-          close - percentMove * steps[0],
-          close - percentMove * steps[1],
-          lowerBound,
-        ];
-        console.log(`🔴 Bearish Zone from ${close} to ${lowerBound}`);
-      } else {
-        console.log("Last candle is not red, no zone printed.");
-        return;
-      }
+      // Bearish candle found
+      const base = close * 0.994;
+      const lowerBound = base - percentMove;
+      orderPrices = [
+        base - percentMove * steps[0],
+        base - percentMove * steps[1],
+        lowerBound,
+      ];
+      console.log(`🔴 Bearish Zone from ${base} to ${lowerBound}`);
     } else {
-      if (close > open) {
-        // Bullish candle found
-        const upperBound = close + percentMove;
-        orderPrices = [
-          close + percentMove * steps[0],
-          close + percentMove * steps[1],
-          upperBound,
-        ];
-        console.log(`🟢 Bullish Zone from ${close} to ${upperBound}`);
-      } else {
-        console.log("Last candle is neutral, no zone printed.");
-        return;
-      }
+      const base = close * 1.006;
+      const upperBound = base + percentMove;
+      orderPrices = [
+        base + percentMove * steps[0],
+        base + percentMove * steps[1],
+        upperBound,
+      ];
+      console.log(`🟢 Bullish Zone from ${base} to ${upperBound}`);
     }
 
     console.log("Order Prices:", orderPrices);
@@ -421,13 +412,13 @@ const getOrderPrices = async (type, lastCandle) => {
     let orderPrices = [];
 
     if (type === "bullish") {
-      const lowerBound = halfway - percentMove;
-      orderPrices = [halfway - percentMove * steps[0], lowerBound];
+      const lowerBound = halfway * 0.995 - percentMove;
+      orderPrices = [halfway * 0.995 - percentMove * steps[0], lowerBound];
 
       console.log(`🟢 Bullish Order Prices from ${halfway} to ${lowerBound}`);
     } else if (type === "bearish") {
-      const upperBound = halfway + percentMove;
-      orderPrices = [halfway + percentMove * steps[0], upperBound];
+      const upperBound = halfway * 1.005 + percentMove;
+      orderPrices = [halfway * 1.005 + percentMove * steps[0], upperBound];
 
       console.log(`🔴 Bearish Order Prices from ${halfway} to ${upperBound}`);
     } else {
