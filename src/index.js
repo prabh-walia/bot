@@ -362,6 +362,8 @@ const goToSmallerFrame = async (type) => {
           upperBound,
         ];
         console.log(`🟢 Bullish Zone from ${base} to ${upperBound}`);
+      } else {
+        console.log(" no bulllish candle");
       }
     } else {
       if (close < open) {
@@ -373,6 +375,8 @@ const goToSmallerFrame = async (type) => {
           upperBound,
         ];
         console.log(`🟢 Bullish Zone from ${base} to ${upperBound}`);
+      } else {
+        console.log(" no bearish candle");
       }
     }
 
