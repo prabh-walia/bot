@@ -52,7 +52,7 @@ let multiple;
 let lastOrderExecuted = false;
 let lastSlOrderExecuted = false;
 let slPercentage;
-
+let ATR = 0.05;
 let ordersPlaced = [];
 
 let tradeCompletedAt = 0;
@@ -485,6 +485,7 @@ const getOrderPrices = async (type, lastCandle) => {
 
 const placeLimitOrders = async (prices, type, atr) => {
   console.log("placing order with Atr ->", atr);
+  ATR = atr;
   let amount = orderQuantity * multiple * 1.1; // Order quantity
   if (!isTrueTrend) {
     console.log("its true trend");
@@ -737,7 +738,7 @@ async function manageOpenPositions() {
         await handleAdditionalEntry(entryPrice, side, amount);
       }
 
-      const risk = entryPrice * 0.007;
+      const risk = ATR;
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
@@ -810,14 +811,13 @@ async function ensureStopMarketExists() {
 
 async function handleAdditionalEntry(entryPrice, side, amount) {
   const shouldTrigger =
-    (side === "buy" && price > entryPrice * 1.002) ||
-    (side === "sell" && price < entryPrice * 0.998);
+    (side === "buy" && price > entryPrice * 1.003) ||
+    (side === "sell" && price < entryPrice * 0.97);
   console.log(" in handleAdditionalEntr y ", price);
   if (!shouldTrigger) return;
 
   const slSide = side === "buy" ? "sell" : "buy";
-  const slPrice =
-    side === "buy" ? price * (1 - slPercentage) : price * (1 + slPercentage);
+  const slPrice = side === "buy" ? price - ATR : price + ATR;
 
   try {
     if (!lastOrderExecuted) {
@@ -912,7 +912,7 @@ async function handleTrailingStop(
   positionKey
 ) {
   const trailingTrigger =
-    side === "buy" ? entryPrice + risk * 2.3 : entryPrice - risk * 2.1;
+    side === "buy" ? entryPrice + risk * 2.1 : entryPrice - risk * 2.0;
   if (
     !alertStatus[positionKey].trailingSlTriggered &&
     ((side === "buy" && price >= trailingTrigger) ||
