@@ -334,12 +334,15 @@ function checkLastCandle(candle, ema) {
 const goToSmallerFrame = async (type) => {
   console.log(" order already there?1", ordersPending);
   if (!ordersPending) {
-    const { ohlcv, bigEma, smallEma } = await fetchAndAnalyzeCandles("small");
+    const { ohlcv, bigEma, smallEma, atr } = await fetchAndAnalyzeCandles(
+      "small"
+    );
 
     if (!ohlcv || ohlcv.length === 0) {
       console.error("No OHLCV data available");
       return;
     }
+    console.log("atr-.", atr);
 
     const lastCandle = ohlcv[ohlcv.length - 2]; // Get last candle
     console.log("Last Candle:", lastCandle);
@@ -383,7 +386,7 @@ const goToSmallerFrame = async (type) => {
     console.log("Order Prices:", orderPrices);
 
     try {
-      ordersPlaced = await placeLimitOrders(orderPrices, type);
+      ordersPlaced = await placeLimitOrders(orderPrices, type, atr);
 
       const hasSuccessfulTrade = ordersPlaced?.some(
         (order) => order.status === "OPEN"
@@ -480,13 +483,14 @@ const getOrderPrices = async (type, lastCandle) => {
   }
 };
 
-const placeLimitOrders = async (prices, type) => {
+const placeLimitOrders = async (prices, type, atr) => {
+  console.log("placing order with Atr ->", atr);
   let amount = orderQuantity * multiple * 1.1; // Order quantity
   if (!isTrueTrend) {
     console.log("its true trend");
     amount = amount / 2;
   }
-  const stopLossPercentage = slPercentage;
+
   let orderResults = [];
   const positions = await binance.fetchPositions();
   const position = positions.find(
@@ -517,13 +521,13 @@ const placeLimitOrders = async (prices, type) => {
 
       if (type === "bullish") {
         side = "buy";
-        slSide = "sell"; // Stop-market order should be the opposite
-        slPrice = price * (1 - stopLossPercentage); // SL 0.5% below entry price
+        slSide = "sell"; // Opposite side for SL
+        slPrice = price - atr * 0.9; // SL = price - ATR for long
         console.log("Placing buy orders");
       } else {
         side = "sell";
-        slSide = "buy"; // Stop-market order should be the opposite
-        slPrice = price * (1 + stopLossPercentage); // SL 0.5% above entry price
+        slSide = "buy"; // Opposite side for SL
+        slPrice = price + atr * 0.9; // SL = price + ATR for short
         console.log("Placing sell orders");
       }
 

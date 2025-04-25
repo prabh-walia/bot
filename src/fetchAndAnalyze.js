@@ -44,14 +44,29 @@ export const fetchAndAnalyzeCandles = async (size) => {
         ? status.trendStatus?.smallTimeframe
         : status?.trendStatus?.sourceTimeframe
     );
+
     const ohlcv = await binance.fetchOHLCV(SYMBOL, TIMEFRAME, undefined, LIMIT);
     const closingPrices = ohlcv.map((entry) => entry[4]);
     const bigEma = calculateEMA(closingPrices, HigherEMA);
     const smallEma = calculateEMA(closingPrices, LowerEMA);
 
+    // Calculate ATR
+    const trs = [];
+    for (let i = 1; i < ohlcv.length; i++) {
+      const [, high, low, , close] = ohlcv[i];
+      const prevClose = ohlcv[i - 1][4];
+      const tr = Math.max(
+        high - low,
+        Math.abs(high - prevClose),
+        Math.abs(low - prevClose)
+      );
+      trs.push(tr);
+    }
+    const atr = trs.reduce((a, b) => a + b, 0) / trs.length;
+
     console.log("YS CURRENT PRICE IS THIS ->", getCurrentPrice());
 
-    return { ohlcv, bigEma, smallEma };
+    return { ohlcv, bigEma, smallEma, atr };
   } catch (error) {
     console.error("Error fetching and analyzing candles:", error);
   }
