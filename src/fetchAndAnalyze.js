@@ -32,7 +32,6 @@ export const fetchAndAnalyzeCandles = async (size) => {
     const HigherEMA = status.trendStatus?.higherEMA;
     const LowerEMA = status.trendStatus?.lowerEMA;
 
-    // Set timeframe based on `size`
     const TIMEFRAME =
       size === "small"
         ? status.trendStatus?.smallTimeframe
@@ -50,7 +49,7 @@ export const fetchAndAnalyzeCandles = async (size) => {
     const bigEma = calculateEMA(closingPrices, HigherEMA);
     const smallEma = calculateEMA(closingPrices, LowerEMA);
 
-    // Calculate ATR
+    // --- Corrected ATR Calculation ---
     const trs = [];
     for (let i = 1; i < ohlcv.length; i++) {
       const [, high, low, , close] = ohlcv[i];
@@ -62,7 +61,14 @@ export const fetchAndAnalyzeCandles = async (size) => {
       );
       trs.push(tr);
     }
-    const atr = trs.reduce((a, b) => a + b, 0) / trs.length;
+
+    const atrPeriod = 14; // Standard ATR 14
+    const k = 2 / (atrPeriod + 1);
+    let atr = trs[0]; // start with first TR
+
+    for (let i = 1; i < trs.length; i++) {
+      atr = trs[i] * k + atr * (1 - k);
+    }
 
     console.log("YS CURRENT PRICE IS THIS ->", getCurrentPrice());
 
