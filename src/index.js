@@ -357,8 +357,8 @@ const goToSmallerFrame = async (type) => {
     if (type === "bullish") {
       if (close > open) {
         // Bullish candle found
-        const base = open * 0.997;
-        const upperBound = base + percentMove;
+        const base = close * 0.995;
+        const upperBound = base - percentMove;
         orderPrices = [
           base + percentMove * steps[0],
           base + percentMove * steps[1],
@@ -370,7 +370,7 @@ const goToSmallerFrame = async (type) => {
       }
     } else {
       if (close < open) {
-        const base = open * 1.003;
+        const base = close * 1.005;
         const upperBound = base + percentMove;
         orderPrices = [
           base + percentMove * steps[0],
@@ -523,12 +523,12 @@ const placeLimitOrders = async (prices, type, atr) => {
       if (type === "bullish") {
         side = "buy";
         slSide = "sell"; // Opposite side for SL
-        slPrice = price - atr * 0.9; // SL = price - ATR for long
+        slPrice = price - atr * 1.5; // SL = price - ATR for long
         console.log("Placing buy orders");
       } else {
         side = "sell";
         slSide = "buy"; // Opposite side for SL
-        slPrice = price + atr * 0.9; // SL = price + ATR for short
+        slPrice = price + atr * 1.5; // SL = price + ATR for short
         console.log("Placing sell orders");
       }
 
