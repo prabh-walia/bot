@@ -441,7 +441,7 @@ const getOrderPrices = async (type, lastCandle) => {
     console.log("📌 Order Prices:", orderPrices);
 
     try {
-      ordersPlaced = await placeLimitOrders(orderPrices, type);
+      ordersPlaced = await placeLimitOrders(orderPrices, type, ATR);
       const positions = await binance.fetchPositions();
       const position = positions.find(
         (p) =>
