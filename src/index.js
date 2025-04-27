@@ -52,7 +52,7 @@ let multiple;
 let lastOrderExecuted = false;
 let lastSlOrderExecuted = false;
 let slPercentage;
-let ATR = 0.05;
+let ATR = 0.4;
 let ordersPlaced = [];
 
 let tradeCompletedAt = 0;
@@ -523,12 +523,12 @@ const placeLimitOrders = async (prices, type, atr) => {
       if (type === "bullish") {
         side = "buy";
         slSide = "sell"; // Opposite side for SL
-        slPrice = price - atr * 1.5; // SL = price - ATR for long
+        slPrice = price - ATR * 1.5; // SL = price - ATR for long
         console.log("Placing buy orders");
       } else {
         side = "sell";
         slSide = "buy"; // Opposite side for SL
-        slPrice = price + atr * 1.5; // SL = price + ATR for short
+        slPrice = price + ATR * 1.5; // SL = price + ATR for short
         console.log("Placing sell orders");
       }
 
