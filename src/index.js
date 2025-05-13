@@ -360,10 +360,11 @@ const goToSmallerFrame = async (type) => {
         const base = close * 0.994;
         const upperBound = base - percentMove;
         orderPrices = [
-          base + percentMove * steps[0],
-          base + percentMove * steps[1],
-          upperBound,
+          base - percentMove * steps[0],
+          base - percentMove * steps[1],
+          lowerBound, // deepest price
         ];
+
         console.log(`🟢 Bullish Zone from ${base} to ${upperBound}`);
       } else {
         console.log(" no bulllish candle");
