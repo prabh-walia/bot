@@ -357,7 +357,7 @@ const goToSmallerFrame = async (type) => {
     if (type === "bullish") {
       if (close > open) {
         // Bullish candle found
-        const base = close * 0.995;
+        const base = close * 0.994;
         const upperBound = base - percentMove;
         orderPrices = [
           base + percentMove * steps[0],
@@ -370,7 +370,7 @@ const goToSmallerFrame = async (type) => {
       }
     } else {
       if (close < open) {
-        const base = close * 1.005;
+        const base = close * 1.006;
         const upperBound = base + percentMove;
         orderPrices = [
           base + percentMove * steps[0],
@@ -523,12 +523,12 @@ const placeLimitOrders = async (prices, type, atr) => {
       if (type === "bullish") {
         side = "buy";
         slSide = "sell"; // Opposite side for SL
-        slPrice = price - ATR * 1.5; // SL = price - ATR for long
+        slPrice = price - ATR * 2; // SL = price - ATR for long
         console.log("Placing buy orders");
       } else {
         side = "sell";
         slSide = "buy"; // Opposite side for SL
-        slPrice = price + ATR * 1.5; // SL = price + ATR for short
+        slPrice = price + ATR * 2; // SL = price + ATR for short
         console.log("Placing sell orders");
       }
 
@@ -738,7 +738,7 @@ async function manageOpenPositions() {
         await handleAdditionalEntry(entryPrice, side, amount);
       }
 
-      const risk = ATR;
+      const risk = ATR * 2;
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
@@ -812,12 +812,12 @@ async function ensureStopMarketExists() {
 async function handleAdditionalEntry(entryPrice, side, amount) {
   const shouldTrigger =
     (side === "buy" && price > entryPrice * 1.003) ||
-    (side === "sell" && price < entryPrice * 0.97);
+    (side === "sell" && price < entryPrice * 0.997);
   console.log(" in handleAdditionalEntr y ", price);
   if (!shouldTrigger) return;
 
   const slSide = side === "buy" ? "sell" : "buy";
-  const slPrice = side === "buy" ? price - ATR : price + ATR;
+  const slPrice = side === "buy" ? price - ATR * 1.5 : price + ATR * 1.5;
 
   try {
     if (!lastOrderExecuted) {
