@@ -155,14 +155,14 @@ const findTrades = async () => {
       if (trend === "bullish") {
         const result = checkLastCandle(lastCandle, smallEma);
 
-        // if (result.isAboveEMA) {
-        if (true) {
+        if (result.isAboveEMA) {
+        // if (true) {
           console.log("last candle is bullish and above EMA");
           const closingPrices = ohlcv.map((candle) => candle[4]);
           const latestRSI20 = calculateRSI20(closingPrices);
 
-          // if (latestRSI20 < 84) {
-          if (true) {
+          if (latestRSI20 < 84) {
+          // if (true) {
             goToSmallerFrame("bullish");
           } else {
             console.log("❌ RSI is not below 84. No order placement.");
@@ -357,8 +357,8 @@ const goToSmallerFrame = async (type) => {
     let orderPrices = [];
 
     if (type === "bullish") {
-      // if(close>open)
-      if (true) {
+      if(close>open)
+      // if (true) {
         // Bullish candle found
         const base = close * 0.995;
         const lowerBound = base - percentMove;
