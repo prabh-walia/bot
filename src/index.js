@@ -368,7 +368,7 @@ const goToSmallerFrame = async (type) => {
           lowerBound, // deepest price
         ];
 
-        console.log(`🟢 Bullish Zone from ${base} to ${upperBound}`);
+        console.log(`🟢 Bullish Zone from ${base} to ${lowerBound}`);
       } else {
         console.log(" no bulllish candle");
       }
