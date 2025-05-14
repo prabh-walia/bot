@@ -358,7 +358,7 @@ const goToSmallerFrame = async (type) => {
       if (close > open) {
         // Bullish candle found
         const base = close * 0.995;
-        const upperBound = base - percentMove;
+        const lowerBound = base - percentMove;
         orderPrices = [
           base - percentMove * steps[0],
           base - percentMove * steps[1],
