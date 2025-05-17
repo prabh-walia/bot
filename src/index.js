@@ -524,12 +524,12 @@ const placeLimitOrders = async (prices, type, atr) => {
       if (type === "bullish") {
         side = "buy";
         slSide = "sell"; // Opposite side for SL
-        slPrice = price - ATR * 2; // SL = price - ATR for long
+        slPrice = price - ATR * 2.3; // SL = price - ATR for long
         console.log("Placing buy orders");
       } else {
         side = "sell";
         slSide = "buy"; // Opposite side for SL
-        slPrice = price + ATR * 2; // SL = price + ATR for short
+        slPrice = price + ATR * 2.3; // SL = price + ATR for short
         console.log("Placing sell orders");
       }
 
@@ -739,7 +739,7 @@ async function manageOpenPositions() {
         await handleAdditionalEntry(entryPrice, side, amount);
       }
 
-      const risk = ATR * 2;
+      const risk = ATR * 2.3;
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
@@ -818,7 +818,7 @@ async function handleAdditionalEntry(entryPrice, side, amount) {
   if (!shouldTrigger) return;
 
   const slSide = side === "buy" ? "sell" : "buy";
-  const slPrice = side === "buy" ? price - ATR * 1.5 : price + ATR * 1.5;
+  const slPrice = side === "buy" ? price - ATR * 1.6 : price + ATR * 1.6;
 
   try {
     if (!lastOrderExecuted) {
