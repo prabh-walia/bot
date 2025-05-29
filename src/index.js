@@ -740,11 +740,11 @@ async function manageOpenPositions() {
         await handleAdditionalEntry(entryPrice, side, amount);
       }
 
-      const risk = ATR * 2.3;
+      const risk = ATR * 2.5;
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
-        side === "buy" ? entryPrice + risk * 8 : entryPrice - risk * 7;
+        side === "buy" ? entryPrice + risk * 4.5 : entryPrice - risk * 3.5;
 
       console.log(
         ` 📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
@@ -819,7 +819,7 @@ async function handleAdditionalEntry(entryPrice, side, amount) {
   if (!shouldTrigger) return;
 
   const slSide = side === "buy" ? "sell" : "buy";
-  const slPrice = side === "buy" ? price - ATR * 1.6 : price + ATR * 1.6;
+  const slPrice = side === "buy" ? price - ATR * 2 : price + ATR * 2;
 
   try {
     if (!lastOrderExecuted) {
