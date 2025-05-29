@@ -248,6 +248,7 @@ const MIN_ORDER_QUANTITY = {
   "LTC/USDT": 0.16,
   "XRP/USDT": 4,
   "SUI/USDT": 3,
+  "ALGO/USDT": 300,
 };
 const SL_PERCENTAGE = {
   "1h": 0.009,
