@@ -19,7 +19,7 @@ import { binance } from "./binanceClient.js";
 import { Status } from "./model.js";
 import { trade } from "./globalVariables.js";
 import { price } from "./getPrice.js";
-
+import { calculatePivotPoints } from "./utils.js";
 import {
   AMOUNT,
   FIXED_RISK_AMOUNT,
@@ -103,7 +103,7 @@ const findTrades = async () => {
       console.log("Fetching and analyzing candles...");
 
       await new Promise((resolve) => setTimeout(resolve, fetchInterval));
-      const { ohlcv, bigEma, smallEma } = await fetchAndAnalyzeCandles("big");
+      const { ohlcv, bigEma, smallEma } = await fetchAndAnalyzeCandles("small"); // 30 min candles with ema
 
       console.log("Candles fetched and analyzed.");
 
@@ -116,10 +116,10 @@ const findTrades = async () => {
 
       const highs = ohlcv.map((candle) => candle[2]); // Extract highs
       const lows = ohlcv.map((candle) => candle[3]); // Extract lows
-      const pivotHighs = findPivotHighs(highs, leftLen, rightLen);
-      const pivotLows = findPivotLows(lows, leftLen, rightLen);
-      const last2PivotHighs = pivotHighs.slice(-2);
-      const last2PivotLows = pivotLows.slice(-2);
+      // const pivotHighs = findPivotHighs(highs, leftLen, rightLen);
+      // const pivotLows = findPivotLows(lows, leftLen, rightLen);
+      // const last2PivotHighs = pivotHighs.slice(-2);
+      // const last2PivotLows = pivotLows.slice(-2);
 
       // const response = checkBullishPatternAboveEma(filteredSwings);
       // if (response.patternMatched) {
@@ -134,51 +134,40 @@ const findTrades = async () => {
       console.log("EMA->", bigEma);
       console.log("small ema =", smallEma);
 
-      const { smallEmat } = await fetchAndAnalyzeCandlesFortrend();
-      if (price > smallEmat * 1.008) {
+      const { smallEmat, bigEmas, latestCandle } =
+        await fetchAndAnalyzeCandlesFortrend();
+      const [, , high, low, close] = latestCandle;
+      // const pivots = calculatePivotPoints({ high, low, close });
+      //s console.log("pivots for today -", pivots);
+      if (price > bigEmas * 0.98) {
         console.log("price is above ema");
         trend = "bullish";
-      } else if (price < smallEmat * 0.994) {
+      } else {
         console.log("price is below ema");
         trend = "bearish";
-      } else {
-        trend = await findTrend();
       }
+      // } else {
+      //   trend = await findTrend();
+      // }
 
       console.log("trend ->", trend);
-      console.log("Trend ->", trend);
+
       if (trend === overallTrend) {
         isTrueTrend = true;
       } else {
         isTrueTrend = false;
       }
       if (trend === "bullish") {
-        const result = checkLastCandle(lastCandle, smallEma);
+        const result = checkLastCandle(lastCandle, smallEma); //12 ema
 
-        if (result.isAboveEMA) {
-          console.log("last candle is bullish and above EMA");
-          const closingPrices = ohlcv.map((candle) => candle[4]);
-          const latestRSI20 = calculateRSI20(closingPrices);
+        if (result.isNearEMA && result.isBullishHammer) {
+          console.log("last candle is bullish hammer and  near ema");
+          // const closingPrices = ohlcv.map((candle) => candle[4]);
+          // const latestRSI20 = calculateRSI20(closingPrices);
 
-          if (latestRSI20 < 84) {
-            goToSmallerFrame("bullish");
-          } else {
-            console.log("❌ RSI is not below 84. No order placement.");
-          }
-        } else if (result.isBullish) {
-          console.log("last candle is not bullish or not above");
-          const closingPrices = ohlcv.map((candle) => candle[4]);
-          const latestRSI20 = calculateRSI20(closingPrices);
-
-          console.log(`📊 Latest RSI-20: ${latestRSI20}`);
-
-          if (latestRSI20 < 40) {
-            getOrderPrices("bullish", lastCandle);
-          } else {
-            console.log("❌ RSI is not below 40. No order placement.");
-          }
-        } else {
-          console.log("last candle is not bullish");
+          // if (latestRSI20 < 84) {
+          goToSmallerFrame("bullish");
+          // }
         }
 
         // let { stopLossPrice, ratio, patternType } =
@@ -194,46 +183,27 @@ const findTrades = async () => {
         //   );
       } else if (trend == "bearish") {
         const result = checkLastCandle(lastCandle, smallEma);
-        if (result.isBearish && result.isBelowEMA) {
-          const closingPrices = ohlcv.map((candle) => candle[4]);
-          console.log("last candle is beairhs and below EMA");
-          const latestRSI20 = calculateRSI20(closingPrices);
-          if (latestRSI20 > 20) {
-            goToSmallerFrame("bearish");
-            console.log("returned from smaller frame");
-          } else {
-            console.log("rsi is not above 25");
-          }
-        } else if (result.isBearish) {
-          console.log("last candle is not bearish or not below");
-          const closingPrices = ohlcv.map((candle) => candle[4]);
-          const latestRSI20 = calculateRSI20(closingPrices);
-          console.log("rsi ->", latestRSI20);
-          if (latestRSI20 > 53) {
-            getOrderPrices("bearish", lastCandle);
-
-            console.log("returned from get order prices");
-          } else {
-            console.log("rsi is not above 60");
-          }
-        } else {
-          console.log("last candle is not beairhs");
+        if (result.isNearEMA && result.isInvertedHammer) {
+          // const closingPrices = ohlcv.map((candle) => candle[4]);
+          // console.log("last candle is beairhs and below EMA");
+          // const latestRSI20 = calculateRSI20(closingPrices);
+          // if (latestRSI20 > 20) {
+          goToSmallerFrame("bearish");
+          console.log("returned from smaller frame");
         }
-
-        // let { stopLossPrice, ratio, patternType } =
-        //   determineBearishTradeParameters(
-        //     lastCandle,
-        //     prevCandle,
-        //     secondLastCandle,
-        //     zones,
-        //     price,
-        //     priceWithinRange,
-        //     priceWithinRange2,
-        //     ohlcv
-        //   );
-      } else {
-        console.log("market ranged");
       }
+
+      // let { stopLossPrice, ratio, patternType } =
+      //   determineBearishTradeParameters(
+      //     lastCandle,
+      //     prevCandle,
+      //     secondLastCandle,
+      //     zones,
+      //     price,
+      //     priceWithinRange,
+      //     priceWithinRange2,
+      //     ohlcv
+      //   );
 
       console.log("errorZ - ", error);
     } catch (error) {
@@ -291,7 +261,7 @@ const main = async () => {
       if (!position) {
         await findTrades();
       } else {
-        await manageOpenPositions();
+        await trackOpenPosition();
         lastOrderExecuted = false;
         lastSlOrderExecuted = false;
         firstBook = false;
@@ -314,98 +284,94 @@ main();
 
 function checkLastCandle(candle, ema) {
   const open = candle[1];
+  const high = candle[2];
+  const low = candle[3];
   const close = candle[4];
-  console.log("open ->", open);
-  console.log("close ->", close);
-  const isBullish = close > open;
-  const isBearish = close < open;
 
-  let isAboveEMA = null;
-  let isBelowEMA = null;
+  const emaProximityRange = ema * 0.002; // 0.2%
+  const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
 
-  if (isBullish) {
-    isAboveEMA = close >= ema;
-  } else if (isBearish) {
-    isBelowEMA = close <= ema;
-  }
+  const bodySize = Math.abs(close - open);
+  const lowerWick = Math.min(open, close) - low;
+  const upperWick = high - Math.max(open, close);
 
-  return { isBullish, isBearish, isAboveEMA, isBelowEMA };
+  const isBullishHammer =
+    lowerWick >= bodySize * 2 && upperWick <= bodySize && bodySize > 0;
+
+  const isInvertedHammer =
+    upperWick >= bodySize * 2 && lowerWick <= bodySize && bodySize > 0;
+
+  return {
+    isNearEMA,
+    isBullishHammer,
+    isInvertedHammer,
+  };
 }
 
 const goToSmallerFrame = async (type) => {
-  console.log(" order already there?1", ordersPending);
-  if (!ordersPending) {
-    const { ohlcv, bigEma, smallEma, atr } = await fetchAndAnalyzeCandles(
-      "small"
-    );
+  console.log("order already there? ->", ordersPending);
+  if (ordersPending) {
+    console.log("orders already pending");
+    return;
+  }
 
-    if (!ohlcv || ohlcv.length === 0) {
-      console.error("No OHLCV data available");
-      return;
-    }
-    console.log("atr-.", atr);
+  const { ohlcv, atr } = await fetchAndAnalyzeCandles("small");
+  if (!ohlcv || ohlcv.length === 0) {
+    console.error("No OHLCV data available");
+    return;
+  }
 
-    const lastCandle = ohlcv[ohlcv.length - 2]; // Get last candle
-    console.log("Last Candle:", lastCandle);
+  const lastCandle = ohlcv[ohlcv.length - 2];
+  const open = lastCandle[1];
+  const high = lastCandle[2];
+  const low = lastCandle[3];
+  const close = lastCandle[4];
+  console.log(`📊 Price: ${price} | High: ${high} | Low: ${low}`);
 
-    const open = lastCandle[1];
-    const close = lastCandle[4];
-    const percentMove = close * 0.011; // 1.1% move range
+  const highBreak = high;
+  const lowInvalidation = low * 0.996; // 0.3% below low
+  const highInvalidation = high * 1.004; // for bearish setup
 
-    const steps = [0.3, 0.7];
-    let orderPrices = [];
+  console.log(
+    `${type === "bullish" ? "🟢" : "🔴"} Waiting for ${
+      type === "bullish" ? "high breakout" : "low breakdown"
+    } or invalidation`
+  );
+
+  const poll = async () => {
+    if (ordersPending) return;
 
     if (type === "bullish") {
-      if (close > open) {
-        // Bullish candle found
-        const base = close * 0.995;
-        const lowerBound = base - percentMove;
-        orderPrices = [
-          base - percentMove * steps[0],
-          base - percentMove * steps[1],
-          lowerBound, // deepest price
-        ];
-
-        console.log(`🟢 Bullish Zone from ${base} to ${lowerBound}`);
-      } else {
-        console.log(" no bulllish candle");
-      }
-    } else {
-      if (close < open) {
-        const base = close * 1.005;
-        const upperBound = base + percentMove;
-        orderPrices = [
-          base + percentMove * steps[0],
-          base + percentMove * steps[1],
-          upperBound,
-        ];
-        console.log(`🟢 Bearish Zone from ${base} to ${upperBound}`);
-      } else {
-        console.log(" no bearish candle");
-      }
-    }
-
-    console.log("Order Prices:", orderPrices);
-
-    try {
-      ordersPlaced = await placeLimitOrders(orderPrices, type, atr);
-
-      const hasSuccessfulTrade = ordersPlaced?.some(
-        (order) => order.status === "OPEN"
-      );
-
-      if (hasSuccessfulTrade) {
+      if (price >= highBreak) {
+        console.log("✅ Breakout! Placing market BUY");
+        await placeMarketOrder("buy", atr);
         ordersPending = true;
-        monitorOrderFilling();
-      } else {
-        console.log("❌ No trades were placed successfully.");
+        trackOpenPosition();
+        return;
+      } else if (price <= lowInvalidation) {
+        console.log(
+          "❌ Invalidated (price dropped 0.4% below low). Exiting..."
+        );
+        return;
       }
-    } catch (error) {
-      console.error("❌ Error placing orders:", error);
+    } else if (type === "bearish") {
+      if (price <= low) {
+        console.log("✅ Breakdown! Placing market SELL");
+        await placeMarketOrder("sell", atr);
+        ordersPending = true;
+        trackOpenPosition();
+        return;
+      } else if (price >= highInvalidation) {
+        console.log("❌ Invalidated (price rose 0.4% above high). Exiting...");
+        return;
+      }
     }
-  } else {
-    console.log("orders already pending");
-  }
+
+    const nextDelay = Math.floor(Math.random() * (1500 - 800 + 1)) + 800;
+    setTimeout(poll, nextDelay);
+  };
+
+  poll(); // start polling
 };
 
 const getOrderPrices = async (type, lastCandle) => {
@@ -744,7 +710,7 @@ async function manageOpenPositions() {
       const alertTrigger =
         side === "buy" ? entryPrice + risk * 2 : entryPrice - risk * 2;
       const finalExitTrigger =
-        side === "buy" ? entryPrice + risk * 4.5 : entryPrice - risk * 3.5;
+        side === "buy" ? entryPrice + risk * 4.5 : entryPrice - risk * 4;
 
       console.log(
         ` 📊 Active Position: ${side.toUpperCase()} ${positionSize} at Avg Price ${entryPrice}`
@@ -784,6 +750,33 @@ async function manageOpenPositions() {
     }
   }
 }
+const trackOpenPosition = async () => {
+  console.log("📡 Started tracking open position...");
+
+  while (true) {
+    const randomDelay = Math.floor(Math.random() * (2400 - 1800 + 1)) + 1800;
+    await delay(randomDelay);
+
+    try {
+      const position = await getActivePosition();
+      if (!position || parseFloat(position.info.positionAmt) === 0) {
+        console.log("✅ Position closed. Stopping PnL tracking.");
+        ordersPending = false;
+        return;
+      }
+
+      const positionSize = parseFloat(position.info.positionAmt);
+      const entryPrice = parseFloat(position.info.entryPrice);
+      const unrealizedPnL = parseFloat(position.info.unRealizedProfit);
+      const side = positionSize > 0 ? "BUY" : "SELL";
+
+      console.log(`📈 [${side}] Entry: ${entryPrice} | Size: ${positionSize}`);
+      console.log(`💸 PnL: ${unrealizedPnL} | Price: ${price}`);
+    } catch (err) {
+      console.error("❌ Error while tracking position:", err.message);
+    }
+  }
+};
 
 async function ensureStopMarketExists() {
   const openOrders = await binance.fetchOpenOrders(SYMBOL);
@@ -1161,3 +1154,65 @@ async function updateStopLossOrders(positionSize, side) {
     );
   }
 }
+
+const placeMarketOrder = async (side, atr) => {
+  let amount = orderQuantity * multiple * 1.1;
+
+  const slMultiplier = 2;
+  const tpMultiplier = 6.5;
+
+  const stopLossPrice =
+    side === "buy" ? price - atr * slMultiplier : price + atr * slMultiplier;
+
+  const takeProfitPrice =
+    side === "buy" ? price + atr * tpMultiplier : price - atr * tpMultiplier;
+
+  const slSide = side === "buy" ? "sell" : "buy";
+
+  try {
+    // Market order
+    const primaryOrder = await binance.createOrder(
+      SYMBOL,
+      "market",
+      side,
+      amount
+    );
+    console.log("✅ Market order placed:", primaryOrder.id);
+    // Stop Loss
+    const stopLossOrder = await binance.createOrder(
+      SYMBOL,
+      "STOP_MARKET",
+      slSide,
+      amount,
+      undefined,
+      {
+        stopPrice: stopLossPrice.toFixed(2),
+      }
+    );
+    console.log("🛑 Stop loss set at:", stopLossPrice);
+
+    // Take Profit
+    const takeProfitOrder = await binance.createOrder(
+      SYMBOL,
+      "TAKE_PROFIT_MARKET",
+      slSide,
+      amount,
+      undefined,
+      {
+        stopPrice: takeProfitPrice.toFixed(2),
+      }
+    );
+    console.log("🎯 Take profit set at:", takeProfitPrice);
+
+    return {
+      stopLossPrice,
+      takeProfitPrice,
+
+      stopLossOrder,
+      takeProfitOrder,
+    };
+  } catch (err) {
+    console.error("❌ Failed placing market + SL/TP orders:", err.message);
+    throw err;
+  }
+};

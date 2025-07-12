@@ -257,3 +257,23 @@ export function findPivotLows(prices, leftLen, rightLen) {
   }
   return lows;
 }
+export function calculatePivotPoints({ high, low, close }) {
+  const pivot = (high + low + close) / 3;
+
+  const r1 = 2 * pivot - low;
+  const s1 = 2 * pivot - high;
+  const r2 = pivot + (high - low);
+  const s2 = pivot - (high - low);
+  const r3 = high + 2 * (pivot - low);
+  const s3 = low - 2 * (high - pivot);
+
+  return {
+    pivot: parseFloat(pivot.toFixed(2)),
+    R1: parseFloat(r1.toFixed(2)),
+    S1: parseFloat(s1.toFixed(2)),
+    R2: parseFloat(r2.toFixed(2)),
+    S2: parseFloat(s2.toFixed(2)),
+    R3: parseFloat(r3.toFixed(2)),
+    S3: parseFloat(s3.toFixed(2)),
+  };
+}
