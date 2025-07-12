@@ -296,10 +296,10 @@ function checkLastCandle(candle, ema) {
   const upperWick = high - Math.max(open, close);
 
   const isBullishHammer =
-    lowerWick >= bodySize * 2 && upperWick <= bodySize && bodySize > 0;
+    lowerWick > bodySize * 1.5 && upperWick < bodySize && bodySize > 0;
 
   const isInvertedHammer =
-    upperWick >= bodySize * 2 && lowerWick <= bodySize && bodySize > 0;
+    upperWick > bodySize * 1.5 && lowerWick < bodySize && bodySize > 0;
 
   return {
     isNearEMA,
