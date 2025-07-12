@@ -102,9 +102,11 @@ const findTrades = async () => {
       console.log("Fetching and analyzing candles...");
 
       await new Promise((resolve) => setTimeout(resolve, fetchInterval));
-      const { ohlcv, bigEma, smallEma } = await fetchAndAnalyzeCandles("small"); // 30 min candles with ema
+      const { ohlcv, bigEma, smallEma, atr } = await fetchAndAnalyzeCandles(
+        "small"
+      ); // 30 min candles with ema
 
-      console.log("Candles fetched and analyzed.");
+      console.log("Candles fetched and analyzed. and atr is ", atr);
 
       const lastCandle = ohlcv[ohlcv.length - 2];
       console.log("last candle -", ohlcv[ohlcv.length - 2]);
