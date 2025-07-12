@@ -14,7 +14,6 @@ let trend;
 import { findTrend } from "./trendFinder.js";
 import { getRealTimePrice } from "./getPrice.js";
 
-import { placeOrder, monitorOrders } from "./trade.js";
 import { binance } from "./binanceClient.js";
 import { Status } from "./model.js";
 import { trade } from "./globalVariables.js";
