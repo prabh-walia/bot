@@ -215,6 +215,7 @@ const findTrades = async () => {
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
+  "ETH/USDT": 0.008,
   "XRP/USDT": 4,
   "SUI/USDT": 3,
   "ALGO/USDT": 300,
