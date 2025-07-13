@@ -346,9 +346,14 @@ const goToSmallerFrame = async (type) => {
     if (type === "bullish") {
       if (price >= highBreak) {
         console.log("✅ Breakout! Placing market BUY");
-        await placeMarketOrder("buy", atr);
-        ordersPending = true;
-        trackOpenPosition();
+        ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
+        try {
+          await placeMarketOrder("buy", atr);
+          trackOpenPosition();
+        } catch (err) {
+          ordersPending = false; // rollback if failed
+          console.error("❌ Failed to place BUY:", err.message);
+        }
         return;
       } else if (price <= lowInvalidation) {
         console.log(
@@ -359,9 +364,14 @@ const goToSmallerFrame = async (type) => {
     } else if (type === "bearish") {
       if (price <= low) {
         console.log("✅ Breakdown! Placing market SELL");
-        await placeMarketOrder("sell", atr);
         ordersPending = true;
-        trackOpenPosition();
+        try {
+          await placeMarketOrder("sell", atr);
+          trackOpenPosition();
+        } catch (err) {
+          ordersPending = false;
+          console.error("❌ Failed to place SELL:", err.message);
+        }
         return;
       } else if (price >= highInvalidation) {
         console.log("❌ Invalidated (price rose 0.4% above high). Exiting...");
@@ -369,7 +379,7 @@ const goToSmallerFrame = async (type) => {
       }
     }
 
-    const nextDelay = Math.floor(Math.random() * (1500 - 800 + 1)) + 800;
+    const nextDelay = Math.floor(Math.random() * (1700 - 900 + 1)) + 900;
     setTimeout(poll, nextDelay);
   };
 
