@@ -160,7 +160,12 @@ const findTrades = async () => {
       }
       if (trend === "bullish") {
         const result = checkLastCandle(lastCandle, smallEma); //12 ema
-
+        console.log(
+          "is near EMA ",
+          result.isNearEMA,
+          " HAMMER ? ",
+          result.isBullishHammer
+        );
         if (result.isNearEMA && result.isBullishHammer) {
           console.log("last candle is bullish hammer and  near ema");
           // const closingPrices = ohlcv.map((candle) => candle[4]);
@@ -290,7 +295,7 @@ function checkLastCandle(candle, ema) {
   const low = candle[3];
   const close = candle[4];
 
-  const emaProximityRange = ema * 0.003; // 0.2%
+  const emaProximityRange = ema * 0.005; // 0.2%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
 
   const bodySize = Math.abs(close - open);
@@ -339,7 +344,8 @@ const goToSmallerFrame = async (type) => {
       type === "bullish" ? "high breakout" : "low breakdown"
     } or invalidation`
   );
-
+  console.log(" high invalidation  for short->", highInvalidation);
+  console.log(" low invalidation for long ->", lowInvalidation);
   const poll = async () => {
     if (ordersPending) return;
 
