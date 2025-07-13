@@ -1170,8 +1170,8 @@ async function updateStopLossOrders(positionSize, side) {
 const placeMarketOrder = async (side, atr) => {
   let amount = orderQuantity * multiple * 1.1;
 
-  const slMultiplier = 2;
-  const tpMultiplier = 6.5;
+  const slMultiplier = 2.2;
+  const tpMultiplier = 7.5;
 
   const stopLossPrice =
     side === "buy" ? price - atr * slMultiplier : price + atr * slMultiplier;
@@ -1182,7 +1182,7 @@ const placeMarketOrder = async (side, atr) => {
   const slSide = side === "buy" ? "sell" : "buy";
 
   try {
-    // Market order
+    // Step 1: Market Order
     const primaryOrder = await binance.createOrder(
       SYMBOL,
       "market",
@@ -1190,41 +1190,49 @@ const placeMarketOrder = async (side, atr) => {
       amount
     );
     console.log("✅ Market order placed:", primaryOrder.id);
-    // Stop Loss
-    const stopLossOrder = await binance.createOrder(
-      SYMBOL,
-      "STOP_MARKET",
-      slSide,
-      amount,
-      undefined,
-      {
-        stopPrice: stopLossPrice.toFixed(2),
-      }
-    );
-    console.log("🛑 Stop loss set at:", stopLossPrice);
 
-    // Take Profit
-    const takeProfitOrder = await binance.createOrder(
-      SYMBOL,
-      "TAKE_PROFIT_MARKET",
-      slSide,
-      amount,
-      undefined,
-      {
-        stopPrice: takeProfitPrice.toFixed(2),
-      }
-    );
-    console.log("🎯 Take profit set at:", takeProfitPrice);
+    // Step 2: Stop Loss
+    let stopLossOrder;
+    try {
+      stopLossOrder = await binance.createOrder(
+        SYMBOL,
+        "STOP_MARKET",
+        slSide,
+        amount,
+        undefined,
+        { stopPrice: stopLossPrice.toFixed(2) }
+      );
+      console.log("🛑 Stop loss set at:", stopLossPrice);
+    } catch (err) {
+      console.error("❌ Failed to set STOP LOSS. Closing position...");
+      await binance.createOrder(SYMBOL, "market", slSide, amount); // emergency exit
+      throw new Error("SL failed, position closed");
+    }
+
+    // Step 3: Take Profit
+    let takeProfitOrder;
+    try {
+      takeProfitOrder = await binance.createOrder(
+        SYMBOL,
+        "TAKE_PROFIT_MARKET",
+        slSide,
+        amount,
+        undefined,
+        { stopPrice: takeProfitPrice.toFixed(2) }
+      );
+      console.log("🎯 Take profit set at:", takeProfitPrice);
+    } catch (err) {
+      console.error("⚠️ Failed to set TAKE PROFIT. Continuing with only SL.");
+    }
 
     return {
       stopLossPrice,
       takeProfitPrice,
-
       stopLossOrder,
       takeProfitOrder,
     };
   } catch (err) {
-    console.error("❌ Failed placing market + SL/TP orders:", err.message);
+    console.error("❌ Error placing full order stack:", err.message);
     throw err;
   }
 };
