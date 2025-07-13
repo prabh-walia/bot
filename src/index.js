@@ -295,7 +295,7 @@ function checkLastCandle(candle, ema) {
   const low = candle[3];
   const close = candle[4];
 
-  const emaProximityRange = ema * 0.005; // 0.2%
+  const emaProximityRange = ema * 0.006; // 0.2%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
 
   const bodySize = Math.abs(close - open);
@@ -303,10 +303,10 @@ function checkLastCandle(candle, ema) {
   const upperWick = high - Math.max(open, close);
 
   const isBullishHammer =
-    lowerWick > bodySize * 1.5 && upperWick < bodySize && bodySize > 0;
+    lowerWick > bodySize * 1.25 && upperWick < bodySize && bodySize > 0;
 
   const isInvertedHammer =
-    upperWick > bodySize * 1.5 && lowerWick < bodySize && bodySize > 0;
+    upperWick > bodySize * 1.25 && lowerWick < bodySize && bodySize > 0;
 
   return {
     isNearEMA,
