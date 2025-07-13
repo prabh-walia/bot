@@ -295,7 +295,7 @@ function checkLastCandle(candle, ema) {
   const low = candle[3];
   const close = candle[4];
 
-  const emaProximityRange = ema * 0.006; // 0.2%
+  const emaProximityRange = ema * 0.01; // 0.2%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
 
   const bodySize = Math.abs(close - open);
