@@ -379,7 +379,7 @@ const goToSmallerFrame = async (type) => {
       }
     }
 
-    const nextDelay = Math.floor(Math.random() * (1700 - 900 + 1)) + 900;
+    const nextDelay = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
     setTimeout(poll, nextDelay);
   };
 
