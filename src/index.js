@@ -295,7 +295,7 @@ function checkLastCandle(candle, ema) {
   const low = candle[3];
   const close = candle[4];
 
-  const emaProximityRange = ema * 0.01; // 0.2%
+  const emaProximityRange = ema * 0.006; // 0.2%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
 
   const bodySize = Math.abs(close - open);
@@ -303,10 +303,10 @@ function checkLastCandle(candle, ema) {
   const upperWick = high - Math.max(open, close);
 
   const isBullishHammer =
-    lowerWick > bodySize * 1.25 && upperWick < bodySize && bodySize > 0;
+    lowerWick > bodySize * 1.1 && upperWick <= bodySize && bodySize > 0;
 
   const isInvertedHammer =
-    upperWick > bodySize * 1.25 && lowerWick < bodySize && bodySize > 0;
+    upperWick > bodySize * 1.1 && lowerWick <= bodySize && bodySize > 0;
 
   return {
     isNearEMA,
@@ -777,9 +777,25 @@ const trackOpenPosition = async () => {
 
     try {
       const position = await getActivePosition();
+
       if (!position || parseFloat(position.info.positionAmt) === 0) {
         console.log("✅ Position closed. Stopping PnL tracking.");
         ordersPending = false;
+
+        // 🧹 Cancel any remaining open orders (e.g., SL or TP that didn’t trigger)
+        try {
+          const openOrders = await binance.fetchOpenOrders(SYMBOL);
+          for (const order of openOrders) {
+            console.log(`🧹 Canceling leftover order: ${order.id}`);
+            await binance.cancelOrder(order.id, SYMBOL);
+          }
+        } catch (cancelErr) {
+          console.error(
+            "❌ Failed to cancel leftover orders:",
+            cancelErr.message
+          );
+        }
+
         return;
       }
 
