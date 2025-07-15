@@ -52,6 +52,8 @@ let lastOrderExecuted = false;
 let lastSlOrderExecuted = false;
 let slPercentage;
 let ATR = 8;
+let SL_TRAIL_INTERVAL = 3;
+let NO_MOVE_ZONE_PERCENT = 0.006;
 let ordersPlaced = [];
 
 let tradeCompletedAt = 0;
@@ -109,6 +111,7 @@ const findTrades = async () => {
       console.log("Candles fetched and analyzed. and atr is ", atr);
 
       const lastCandle = ohlcv[ohlcv.length - 2];
+
       console.log("last candle -", ohlcv[ohlcv.length - 2]);
       const prevCandle = ohlcv[ohlcv.length - 3];
       const secondLastCandle = ohlcv[ohlcv.length - 4];
@@ -159,14 +162,17 @@ const findTrades = async () => {
         isTrueTrend = false;
       }
       if (trend === "bullish") {
-        const result = checkLastCandle(lastCandle, smallEma); //12 ema
+        const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
         console.log(
           "is near EMA ",
           result.isNearEMA,
           " HAMMER ? ",
           result.isBullishHammer
         );
-        if (result.isNearEMA && result.isBullishHammer) {
+        if (
+          result.isNearEMA &&
+          (result.isBullishHammer || result.isBullishEngulfing)
+        ) {
           console.log("last candle is bullish hammer and  near ema");
           // const closingPrices = ohlcv.map((candle) => candle[4]);
           // const latestRSI20 = calculateRSI20(closingPrices);
@@ -188,8 +194,11 @@ const findTrades = async () => {
         //     ohlcv
         //   );
       } else if (trend == "bearish") {
-        const result = checkLastCandle(lastCandle, smallEma);
-        if (result.isNearEMA && result.isInvertedHammer) {
+        const result = checkLastCandle(lastCandle, smallEma, prevCandle);
+        if (
+          result.isNearEMA &&
+          (result.isInvertedHammer || result.isBearishEngulfing)
+        ) {
           // const closingPrices = ohlcv.map((candle) => candle[4]);
           // console.log("last candle is beairhs and below EMA");
           // const latestRSI20 = calculateRSI20(closingPrices);
@@ -289,13 +298,16 @@ const main = async () => {
 };
 main();
 
-function checkLastCandle(candle, ema) {
+function checkLastCandle(candle, ema, prevCandle) {
   const open = candle[1];
   const high = candle[2];
   const low = candle[3];
   const close = candle[4];
 
-  const emaProximityRange = ema * 0.007; // 0.2%
+  const prevOpen = prevCandle[1];
+  const prevClose = prevCandle[4];
+
+  const emaProximityRange = ema * 0.007; // 0.7%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
 
   const bodySize = Math.abs(close - open);
@@ -308,10 +320,25 @@ function checkLastCandle(candle, ema) {
   const isInvertedHammer =
     upperWick > bodySize * 1.1 && lowerWick <= bodySize && bodySize > 0;
 
+  // Engulfing pattern
+  const isBullishEngulfing =
+    prevClose < prevOpen && // prev red
+    close > open && // current green
+    open < prevClose && // opens below prev close
+    close > prevOpen; // closes above prev open
+
+  const isBearishEngulfing =
+    prevClose > prevOpen && // prev green
+    close < open && // current red
+    open > prevClose && // opens above prev close
+    close < prevOpen; // closes below prev open
+
   return {
     isNearEMA,
     isBullishHammer,
     isInvertedHammer,
+    isBullishEngulfing,
+    isBearishEngulfing,
   };
 }
 
@@ -356,6 +383,10 @@ const goToSmallerFrame = async (type) => {
         try {
           await placeMarketOrder("buy", atr);
           trackOpenPosition();
+          ordersPending = false;
+          tradeCompletedAt = Date.now();
+          trailingActive = false;
+          candlesSinceTP1 = 0;
         } catch (err) {
           ordersPending = false; // rollback if failed
           console.error("❌ Failed to place BUY:", err.message);
@@ -374,6 +405,10 @@ const goToSmallerFrame = async (type) => {
         try {
           await placeMarketOrder("sell", atr);
           trackOpenPosition();
+          ordersPending = false;
+          tradeCompletedAt = Date.now();
+          trailingActive = false;
+          candlesSinceTP1 = 0;
         } catch (err) {
           ordersPending = false;
           console.error("❌ Failed to place SELL:", err.message);
@@ -390,6 +425,160 @@ const goToSmallerFrame = async (type) => {
   };
 
   poll(); // start polling
+};
+const trackOpenPosition = async () => {
+  console.log("📡 Tracking active position...");
+  let slUpdated = false;
+  let initialPositionAmt = 0;
+  let entryPrice = 0;
+  let lastSLPrice = 0;
+
+  while (true) {
+    await delay(Math.floor(Math.random() * (2500 - 1800 + 1)) + 1900);
+
+    try {
+      const position = await getActivePosition();
+      if (!position || parseFloat(position.info.positionAmt) === 0) {
+        console.log("✅ Position closed.");
+        return;
+      }
+
+      const posSize = Math.abs(parseFloat(position.info.positionAmt));
+      entryPrice = parseFloat(position.info.entryPrice);
+      const side = parseFloat(position.info.positionAmt) > 0 ? "buy" : "sell";
+
+      // Initial position tracking
+      if (initialPositionAmt === 0) initialPositionAmt = posSize;
+
+      // TP1 hit logic — activate trailing
+      if (!slUpdated && posSize <= initialPositionAmt * 0.8) {
+        console.log("⚠️ TP1 likely hit. Enabling SL trail...");
+
+        // Cancel old SLs
+        const openOrders = await binance.fetchOpenOrders(SYMBOL);
+        for (const order of openOrders) {
+          if (order.type === "stop_market") {
+            await binance.cancelOrder(order.id, SYMBOL);
+            console.log(`🧹 SL canceled: ${order.id}`);
+          }
+        }
+
+        trailingActive = true;
+        candlesSinceTP1 = 0;
+        slUpdated = true;
+      }
+
+      // Trailing SL
+      if (trailingActive) {
+        candlesSinceTP1++;
+        if (candlesSinceTP1 >= SL_TRAIL_INTERVAL) {
+          candlesSinceTP1 = 0;
+
+          const latestPrice = price;
+          const slSide = side === "buy" ? "sell" : "buy";
+          const offset = ATR * 1.2;
+
+          const newSL =
+            side === "buy" ? latestPrice - offset : latestPrice + offset;
+
+          const noMoveZone = latestPrice * NO_MOVE_ZONE_PERCENT;
+          const priceDiff = Math.abs(newSL - lastSLPrice);
+
+          if (priceDiff > noMoveZone) {
+            const stopPrice = newSL.toFixed(2);
+
+            // Before placing trailing SL, cancel previous one:
+            const openOrders = await binance.fetchOpenOrders(SYMBOL);
+            for (const order of openOrders) {
+              if (order.type === "stop_market") {
+                await binance.cancelOrder(order.id, SYMBOL);
+                console.log(`♻️ Old SL canceled before trailing: ${order.id}`);
+              }
+            }
+
+            await binance.createOrder(
+              SYMBOL,
+              "STOP_MARKET",
+              slSide,
+              posSize,
+              undefined,
+              { stopPrice }
+            );
+            lastSLPrice = newSL;
+            console.log("🔁 Trailing SL updated:", stopPrice);
+          } else {
+            console.log("⏸ No move zone — skip SL update");
+          }
+        }
+      }
+    } catch (err) {
+      console.error("❌ Error in tracking loop:", err.message);
+    }
+  }
+};
+
+const placeMarketOrder = async (side, atr) => {
+  const totalAmount = orderQuantity * multiple * 1.1;
+  const amountTP1 = totalAmount * 0.6;
+  const amountTP2 = totalAmount * 0.4;
+
+  ATR = atr;
+  const slMultiplier = 1.8;
+  const tp1Multiplier = 6.2;
+
+  const slSide = side === "buy" ? "sell" : "buy";
+  const entryPrice = price;
+
+  const stopLossPrice =
+    side === "buy"
+      ? entryPrice - atr * slMultiplier
+      : entryPrice + atr * slMultiplier;
+
+  const takeProfitPrice1 =
+    side === "buy"
+      ? entryPrice + atr * tp1Multiplier
+      : entryPrice - atr * tp1Multiplier;
+
+  try {
+    // Step 1: Entry
+    await binance.createOrder(SYMBOL, "market", side, totalAmount);
+    console.log("✅ Market order placed");
+
+    // Step 2: Initial Stop Loss for full position
+    await binance.createOrder(
+      SYMBOL,
+      "STOP_MARKET",
+      slSide,
+      totalAmount,
+      undefined,
+      { stopPrice: stopLossPrice.toFixed(2) }
+    );
+    console.log("🛑 Initial SL set at:", stopLossPrice);
+
+    // Step 3: Take Profit 1 for 60%
+    await binance.createOrder(
+      SYMBOL,
+      "TAKE_PROFIT_MARKET",
+      slSide,
+      amountTP1,
+      undefined,
+      { stopPrice: takeProfitPrice1.toFixed(2) }
+    );
+    console.log("🎯 TP1 set at:", takeProfitPrice1);
+
+    // ⚠️ DO NOT PLACE STATIC TP2 — we will trail that manually after TP1 hits
+
+    return {
+      stopLossPrice,
+      takeProfitPrice1,
+      amountTP2,
+      entryPrice,
+      side,
+    };
+  } catch (err) {
+    console.error("❌ Order placement failed:", err.message);
+    throw err;
+  }
 };
 
 const getOrderPrices = async (type, lastCandle) => {
@@ -768,98 +957,6 @@ async function manageOpenPositions() {
     }
   }
 }
-const trackOpenPosition = async () => {
-  console.log("📡 Started tracking open position...");
-
-  let slUpdated = false;
-  let initialPositionAmt = 0;
-
-  while (true) {
-    const randomDelay = Math.floor(Math.random() * (2400 - 1800 + 1)) + 1800;
-    await delay(randomDelay);
-
-    try {
-      const position = await getActivePosition();
-
-      if (!position || parseFloat(position.info.positionAmt) === 0) {
-        console.log("✅ Position closed. Stopping PnL tracking.");
-        ordersPending = false;
-
-        // 🧹 Cancel any leftover open orders
-        try {
-          const openOrders = await binance.fetchOpenOrders(SYMBOL);
-          for (const order of openOrders) {
-            console.log(`🧹 Canceling leftover order: ${order.id}`);
-            await binance.cancelOrder(order.id, SYMBOL);
-          }
-        } catch (cancelErr) {
-          console.error(
-            "❌ Failed to cancel leftover orders:",
-            cancelErr.message
-          );
-        }
-
-        return;
-      }
-
-      const positionSize = Math.abs(parseFloat(position.info.positionAmt));
-      const entryPrice = parseFloat(position.info.entryPrice);
-      const side = parseFloat(position.info.positionAmt) > 0 ? "buy" : "sell";
-      const unrealizedPnL = parseFloat(position.info.unRealizedProfit);
-
-      console.log(
-        `📈 [${side.toUpperCase()}] Entry: ${entryPrice} | Size: ${positionSize}`
-      );
-      console.log(`💸 PnL: ${unrealizedPnL} | Price: ${price}`);
-
-      // Track initial size
-      if (initialPositionAmt === 0) {
-        initialPositionAmt = positionSize;
-      }
-
-      // 🧠 Stop Loss Update Logic
-      if (!slUpdated && positionSize < initialPositionAmt) {
-        console.log("⚠️ TP1 likely hit. Updating Stop Loss...");
-
-        try {
-          // Cancel all current open STOP_MARKET orders
-          const openOrders = await binance.fetchOpenOrders(SYMBOL);
-          for (const order of openOrders) {
-            if (order.type === "stop_market") {
-              console.log(`🛑 Canceling old SL: ${order.id}`);
-              await binance.cancelOrder(order.id, SYMBOL);
-            }
-          }
-
-          // Place new stop loss for remaining size
-          const atr = ATR; // or pass it from outside if already available
-          const slMultiplier = 0.5;
-
-          const stopPrice =
-            side === "buy"
-              ? entryPrice - atr * slMultiplier
-              : entryPrice + atr * slMultiplier;
-
-          await binance.createOrder(
-            SYMBOL,
-            "STOP_MARKET",
-            side === "buy" ? "sell" : "buy",
-            positionSize,
-            undefined,
-            { stopPrice: stopPrice.toFixed(2) }
-          );
-
-          console.log("✅ SL updated for remaining position:", positionSize);
-          slUpdated = true;
-        } catch (slErr) {
-          console.error("❌ Error updating SL after TP1:", slErr.message);
-        }
-      }
-    } catch (err) {
-      console.error("❌ Error while tracking position:", err.message);
-    }
-  }
-};
 
 async function ensureStopMarketExists() {
   const openOrders = await binance.fetchOpenOrders(SYMBOL);
@@ -1237,88 +1334,3 @@ async function updateStopLossOrders(positionSize, side) {
     );
   }
 }
-
-const placeMarketOrder = async (side, atr) => {
-  const totalAmount = orderQuantity * multiple * 1.1;
-  const amountTP1 = totalAmount * 0.6;
-  const amountTP2 = totalAmount * 0.4;
-  ATR = atr;
-  const slMultiplier = 1.8;
-  const tp1Multiplier = 6.7;
-  const tp2Multiplier = 10;
-
-  const slSide = side === "buy" ? "sell" : "buy";
-  const entryPrice = price;
-
-  const stopLossPrice =
-    side === "buy"
-      ? entryPrice - atr * slMultiplier
-      : entryPrice + atr * slMultiplier;
-
-  const takeProfitPrice1 =
-    side === "buy"
-      ? entryPrice + atr * tp1Multiplier
-      : entryPrice - atr * tp1Multiplier;
-
-  const takeProfitPrice2 =
-    side === "buy"
-      ? entryPrice + atr * tp2Multiplier
-      : entryPrice - atr * tp2Multiplier;
-
-  try {
-    // Step 1: Market Order Entry
-    const entryOrder = await binance.createOrder(
-      SYMBOL,
-      "market",
-      side,
-      totalAmount
-    );
-    console.log("✅ Market order placed:", entryOrder.id);
-
-    // Step 2: Stop Loss
-    const stopLossOrder = await binance.createOrder(
-      SYMBOL,
-      "STOP_MARKET",
-      slSide,
-      totalAmount,
-      undefined,
-      { stopPrice: stopLossPrice.toFixed(2) }
-    );
-    console.log("🛑 Stop loss set at:", stopLossPrice);
-
-    // Step 3: TP1 (60% size)
-    const tpOrder1 = await binance.createOrder(
-      SYMBOL,
-      "TAKE_PROFIT_MARKET",
-      slSide,
-      amountTP1,
-      undefined,
-      { stopPrice: takeProfitPrice1.toFixed(2) }
-    );
-    console.log("🎯 TP1 set at:", takeProfitPrice1);
-
-    // Step 4: TP2 (40% size)
-    const tpOrder2 = await binance.createOrder(
-      SYMBOL,
-      "TAKE_PROFIT_MARKET",
-      slSide,
-      amountTP2,
-      undefined,
-      { stopPrice: takeProfitPrice2.toFixed(2) }
-    );
-    console.log("🎯 TP2 set at:", takeProfitPrice2);
-
-    return {
-      stopLossPrice,
-      takeProfitPrice1,
-      takeProfitPrice2,
-      stopLossOrder,
-      tpOrder1,
-      tpOrder2,
-    };
-  } catch (err) {
-    console.error("❌ Error placing orders:", err.message);
-
-    throw err;
-  }
-};
