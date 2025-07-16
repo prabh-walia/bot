@@ -385,8 +385,6 @@ const goToSmallerFrame = async (type) => {
           trackOpenPosition();
           ordersPending = false;
           tradeCompletedAt = Date.now();
-          trailingActive = false;
-          candlesSinceTP1 = 0;
         } catch (err) {
           ordersPending = false; // rollback if failed
           console.error("❌ Failed to place BUY:", err.message);
@@ -407,8 +405,6 @@ const goToSmallerFrame = async (type) => {
           trackOpenPosition();
           ordersPending = false;
           tradeCompletedAt = Date.now();
-          trailingActive = false;
-          candlesSinceTP1 = 0;
         } catch (err) {
           ordersPending = false;
           console.error("❌ Failed to place SELL:", err.message);
@@ -428,10 +424,14 @@ const goToSmallerFrame = async (type) => {
 };
 const trackOpenPosition = async () => {
   console.log("📡 Tracking active position...");
+
   let slUpdated = false;
   let initialPositionAmt = 0;
   let entryPrice = 0;
   let lastSLPrice = 0;
+
+  let trailingActive = false; // <-- Define this locally
+  let candlesSinceTP1 = 0; // <-- And this too
 
   while (true) {
     await delay(Math.floor(Math.random() * (2500 - 1800 + 1)) + 1900);
@@ -447,14 +447,11 @@ const trackOpenPosition = async () => {
       entryPrice = parseFloat(position.info.entryPrice);
       const side = parseFloat(position.info.positionAmt) > 0 ? "buy" : "sell";
 
-      // Initial position tracking
       if (initialPositionAmt === 0) initialPositionAmt = posSize;
 
-      // TP1 hit logic — activate trailing
       if (!slUpdated && posSize <= initialPositionAmt * 0.8) {
         console.log("⚠️ TP1 likely hit. Enabling SL trail...");
 
-        // Cancel old SLs
         const openOrders = await binance.fetchOpenOrders(SYMBOL);
         for (const order of openOrders) {
           if (order.type === "stop_market") {
@@ -468,26 +465,24 @@ const trackOpenPosition = async () => {
         slUpdated = true;
       }
 
-      // Trailing SL
       if (trailingActive) {
         candlesSinceTP1++;
         if (candlesSinceTP1 >= SL_TRAIL_INTERVAL) {
           candlesSinceTP1 = 0;
 
-          const latestPrice = price;
+          const latestPrice = price; // Make sure `price` is available in scope
           const slSide = side === "buy" ? "sell" : "buy";
-          const offset = ATR * 1.2;
+          const offset = ATR * 1.2; // Make sure ATR is defined
 
           const newSL =
             side === "buy" ? latestPrice - offset : latestPrice + offset;
 
-          const noMoveZone = latestPrice * NO_MOVE_ZONE_PERCENT;
+          const noMoveZone = latestPrice * NO_MOVE_ZONE_PERCENT; // Also define this
           const priceDiff = Math.abs(newSL - lastSLPrice);
 
           if (priceDiff > noMoveZone) {
             const stopPrice = newSL.toFixed(2);
 
-            // Before placing trailing SL, cancel previous one:
             const openOrders = await binance.fetchOpenOrders(SYMBOL);
             for (const order of openOrders) {
               if (order.type === "stop_market") {
