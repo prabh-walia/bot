@@ -303,35 +303,53 @@ function checkLastCandle(candle, ema, prevCandle) {
   const high = candle[2];
   const low = candle[3];
   const close = candle[4];
-
+  const vol = candle[5];
   const prevOpen = prevCandle[1];
+  const prevHigh = prevCandle[2];
+  const prevLow = prevCandle[3];
   const prevClose = prevCandle[4];
-
-  const emaProximityRange = ema * 0.0085; // 0.7%
+  console.log(" volume ->", vol);
+  const emaProximityRange = ema * 0.0085; // ~0.85%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
+  const candleRange = high - low;
+  const minBodySizePercent = 0.5; // 50% of the total range required as body
+
+  const isBodyBigEnough =
+    Math.abs(close - open) >= candleRange * minBodySizePercent;
 
   const bodySize = Math.abs(close - open);
   const lowerWick = Math.min(open, close) - low;
   const upperWick = high - Math.max(open, close);
 
   const isBullishHammer =
-    lowerWick > bodySize * 1.1 && upperWick <= bodySize && bodySize > 0;
+    lowerWick > bodySize * 1.1 &&
+    upperWick < lowerWick * 0.7 &&
+    bodySize > 0 &&
+    bodySize <= lowerWick &&
+    isBodyBigEnough;
 
   const isInvertedHammer =
-    upperWick > bodySize * 1.1 && lowerWick <= bodySize && bodySize > 0;
+    upperWick > bodySize * 1.1 &&
+    lowerWick < upperWick * 0.7 &&
+    bodySize > 0 &&
+    bodySize <= upperWick &&
+    isBodyBigEnough;
 
-  // Engulfing pattern
+  // ✅ Improved Bullish Engulfing
   const isBullishEngulfing =
-    prevClose < prevOpen && // prev red
+    prevClose < prevOpen && // previous red
     close > open && // current green
-    open < prevClose && // opens below prev close
-    close > prevOpen; // closes above prev open
+    open < prevClose && // opens below previous close
+    close >= prevHigh &&
+    isBodyBigEnough; // closes at or above previous high
 
+  // ✅ Improved Bearish Engulfing
   const isBearishEngulfing =
-    prevClose > prevOpen && // prev green
+    prevClose > prevOpen && // previous green
     close < open && // current red
-    open > prevClose && // opens above prev close
-    close < prevOpen; // closes below prev open
+    open > prevClose && // opens above previous close
+    close <= prevLow &&
+    isBodyBigEnough; // closes at or below previous low
 
   return {
     isNearEMA,
@@ -392,7 +410,8 @@ const goToSmallerFrame = async (type) => {
         return;
       } else if (price <= lowInvalidation) {
         console.log(
-          "❌ Invalidated (price dropped 0.4% below low). Exiting..."
+          "❌ Invalidated (price dropped 0.4% below low). Exiting...",
+          price
         );
         return;
       }
