@@ -312,7 +312,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const emaProximityRange = ema * 0.0085; // ~0.85%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
   const candleRange = high - low;
-  const minBodySizePercent = 0.5; // 50% of the total range required as body
+  const minBodySizePercent = 0.55; // 50% of the total range required as body
 
   const isBodyBigEnough =
     Math.abs(close - open) >= candleRange * minBodySizePercent;
@@ -325,15 +325,13 @@ function checkLastCandle(candle, ema, prevCandle) {
     lowerWick > bodySize * 1.1 &&
     upperWick < lowerWick * 0.7 &&
     bodySize > 0 &&
-    bodySize <= lowerWick &&
-    isBodyBigEnough;
+    bodySize <= lowerWick;
 
   const isInvertedHammer =
     upperWick > bodySize * 1.1 &&
     lowerWick < upperWick * 0.7 &&
     bodySize > 0 &&
-    bodySize <= upperWick &&
-    isBodyBigEnough;
+    bodySize <= upperWick;
 
   // ✅ Improved Bullish Engulfing
   const isBullishEngulfing =
