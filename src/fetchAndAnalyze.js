@@ -51,7 +51,7 @@ export const fetchAndAnalyzeCandles = async (size) => {
 
     // --- Corrected ATR Calculation ---
 
-    atr = calculateATR(ohlcv, 20);
+    const atr = calculateATR(ohlcv, 20);
 
     console.log("YS CURRENT PRICE IS THIS ->", getCurrentPrice());
 
