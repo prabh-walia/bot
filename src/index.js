@@ -540,8 +540,8 @@ const placeMarketOrder = async (side, atr) => {
   const amountTP2 = totalAmount * 0.4;
 
   ATR = atr;
-  const slMultiplier = 1.8;
-  const tp1Multiplier = 6.2;
+  const slMultiplier = 1.7;
+  const tp1Multiplier = 7.6;
 
   const slSide = side === "buy" ? "sell" : "buy";
   const entryPrice = price;

@@ -50,25 +50,8 @@ export const fetchAndAnalyzeCandles = async (size) => {
     const smallEma = calculateEMA(closingPrices, LowerEMA);
 
     // --- Corrected ATR Calculation ---
-    const trs = [];
-    for (let i = 1; i < ohlcv.length; i++) {
-      const [, high, low, , close] = ohlcv[i];
-      const prevClose = ohlcv[i - 1][4];
-      const tr = Math.max(
-        high - low,
-        Math.abs(high - prevClose),
-        Math.abs(low - prevClose)
-      );
-      trs.push(tr);
-    }
 
-    const atrPeriod = 14; // Standard ATR 14
-    const k = 2 / (atrPeriod + 1);
-    let atr = trs[0]; // start with first TR
-
-    for (let i = 1; i < trs.length; i++) {
-      atr = trs[i] * k + atr * (1 - k);
-    }
+    atr = calculateATR(ohlcv, 20);
 
     console.log("YS CURRENT PRICE IS THIS ->", getCurrentPrice());
 
@@ -77,6 +60,29 @@ export const fetchAndAnalyzeCandles = async (size) => {
     console.error("Error fetching and analyzing candles:", error);
   }
 };
+function calculateATR(ohlcv, length = 20) {
+  const trs = [];
+
+  for (let i = 1; i < ohlcv.length; i++) {
+    const [, high, low, , close] = ohlcv[i];
+    const prevClose = ohlcv[i - 1][4];
+    const tr = Math.max(
+      high - low,
+      Math.abs(high - prevClose),
+      Math.abs(low - prevClose)
+    );
+    trs.push(tr);
+  }
+
+  // RMA smoothing: rma = (prev * (len - 1) + current) / len
+  let rmaAtr = trs.slice(0, length).reduce((sum, val) => sum + val, 0) / length;
+
+  for (let i = length; i < trs.length; i++) {
+    rmaAtr = (rmaAtr * (length - 1) + trs[i]) / length;
+  }
+
+  return rmaAtr;
+}
 
 export const fetchAndAnalyzeCandlesFortrend = async () => {
   try {
