@@ -320,7 +320,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const bodySize = Math.abs(close - open);
   const lowerWick = Math.min(open, close) - low;
   const upperWick = high - Math.max(open, close);
-  const isVolumeConfirmation = vol > prevCandle[5];
+  const isVolumeConfirmation = vol > prevCandle[5] * 0.8;
 
   const isBullishHammer =
     lowerWick > bodySize * 1.1 &&
