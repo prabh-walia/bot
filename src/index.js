@@ -192,7 +192,7 @@ const findTrades = async () => {
           // const latestRSI20 = calculateRSI20(closingPrices);
 
           // if (latestRSI20 < 84) {
-          goToSmallerFrame("bullish");
+          await goToSmallerFrame("bullish");
           // }
         }
 
@@ -217,7 +217,7 @@ const findTrades = async () => {
           // console.log("last candle is beairhs and below EMA");
           // const latestRSI20 = calculateRSI20(closingPrices);
           // if (latestRSI20 > 20) {
-          goToSmallerFrame("bearish");
+          await goToSmallerFrame("bearish");
           console.log("returned from smaller frame");
         }
       }
@@ -455,7 +455,7 @@ const trackOpenPosition = async () => {
   let candlesSinceTP1 = 0; // <-- And this too
 
   while (true) {
-    await delay(Math.floor(Math.random() * (2500 - 1800 + 1)) + 1900);
+    await delay(Math.floor(Math.random() * (3100 - 2500 + 1)) + 2400);
 
     try {
       const position = await getActivePosition();
@@ -468,6 +468,12 @@ const trackOpenPosition = async () => {
       entryPrice = parseFloat(position.info.entryPrice);
       const side = parseFloat(position.info.positionAmt) > 0 ? "buy" : "sell";
 
+      const unrealizedPnL = parseFloat(position.info.unRealizedProfit);
+
+      // ✅ Log live PnL and Qty
+      console.log(
+        `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${price} | PnL: ${unrealizedPnL}`
+      );
       if (initialPositionAmt === 0) initialPositionAmt = posSize;
 
       if (!slUpdated && posSize <= initialPositionAmt * 0.8) {
