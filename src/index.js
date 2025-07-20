@@ -461,6 +461,7 @@ const trackOpenPosition = async () => {
       const position = await getActivePosition();
       if (!position || parseFloat(position.info.positionAmt) === 0) {
         console.log("✅ Position closed.");
+        await cancelAllOpenOrders();
         return;
       }
 
