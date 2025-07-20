@@ -449,10 +449,11 @@ const trackOpenPosition = async () => {
   let slUpdated = false;
   let initialPositionAmt = 0;
   let entryPrice = 0;
-  let lastSLPrice = 0;
 
-  let trailingActive = false; // <-- Define this locally
-  let candlesSinceTP1 = 0; // <-- And this too
+  let trailingActive = false;
+  let lastSLTriggerPrice = 0;
+  let lastSLUpdateTime = 0;
+  let currentSLATRMultiplier = 3.5;
 
   while (true) {
     await delay(Math.floor(Math.random() * (3100 - 2500 + 1)) + 2400);
@@ -468,13 +469,13 @@ const trackOpenPosition = async () => {
       const posSize = Math.abs(parseFloat(position.info.positionAmt));
       entryPrice = parseFloat(position.info.entryPrice);
       const side = parseFloat(position.info.positionAmt) > 0 ? "buy" : "sell";
-
+      const price = await getCurrentPrice(); // You need a price fetcher
       const unrealizedPnL = parseFloat(position.info.unRealizedProfit);
 
-      // ✅ Log live PnL and Qty
       console.log(
         `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${price} | PnL: ${unrealizedPnL}`
       );
+
       if (initialPositionAmt === 0) initialPositionAmt = posSize;
 
       if (!slUpdated && posSize <= initialPositionAmt * 0.8) {
@@ -489,33 +490,49 @@ const trackOpenPosition = async () => {
         }
 
         trailingActive = true;
-        candlesSinceTP1 = 0;
+        lastSLTriggerPrice = price;
+        lastSLUpdateTime = Date.now();
+        currentSLATRMultiplier = 3.5;
+
+        const initialSL =
+          side === "buy" ? price - ATR * 3.5 : price + ATR * 3.5;
+        const slSide = side === "buy" ? "sell" : "buy";
+
+        await binance.createOrder(
+          SYMBOL,
+          "STOP_MARKET",
+          slSide,
+          posSize,
+          undefined,
+          { stopPrice: initialSL.toFixed(2) }
+        );
+
+        console.log("🛡️ Initial trailing SL placed at:", initialSL.toFixed(2));
         slUpdated = true;
       }
 
       if (trailingActive) {
-        candlesSinceTP1++;
-        if (candlesSinceTP1 >= SL_TRAIL_INTERVAL) {
-          candlesSinceTP1 = 0;
+        const timeSinceLastUpdate = Date.now() - lastSLUpdateTime;
+        const TRAIL_INTERVAL_MS = 90 * 60 * 1000; // 90 minutes
 
-          const latestPrice = price; // Make sure `price` is available in scope
-          const slSide = side === "buy" ? "sell" : "buy";
-          const offset = ATR * 1.2; // Make sure ATR is defined
+        const slSide = side === "buy" ? "sell" : "buy";
+        const atrMultiplier = 2.5;
 
-          const newSL =
-            side === "buy" ? latestPrice - offset : latestPrice + offset;
-
-          const noMoveZone = latestPrice * NO_MOVE_ZONE_PERCENT; // Also define this
-          const priceDiff = Math.abs(newSL - lastSLPrice);
-
-          if (priceDiff > noMoveZone) {
-            const stopPrice = newSL.toFixed(2);
+        if (timeSinceLastUpdate >= TRAIL_INTERVAL_MS) {
+          if (
+            (side === "buy" && price > lastSLTriggerPrice) ||
+            (side === "sell" && price < lastSLTriggerPrice)
+          ) {
+            const newSL =
+              side === "buy"
+                ? price - ATR * atrMultiplier
+                : price + ATR * atrMultiplier;
 
             const openOrders = await binance.fetchOpenOrders(SYMBOL);
             for (const order of openOrders) {
               if (order.type === "stop_market") {
                 await binance.cancelOrder(order.id, SYMBOL);
-                console.log(`♻️ Old SL canceled before trailing: ${order.id}`);
+                console.log(`♻️ Old SL canceled: ${order.id}`);
               }
             }
 
@@ -525,12 +542,14 @@ const trackOpenPosition = async () => {
               slSide,
               posSize,
               undefined,
-              { stopPrice }
+              { stopPrice: newSL.toFixed(2) }
             );
-            lastSLPrice = newSL;
-            console.log("🔁 Trailing SL updated:", stopPrice);
+
+            lastSLTriggerPrice = price;
+            lastSLUpdateTime = Date.now();
+            console.log("🔁 Trailing SL moved to:", newSL.toFixed(2));
           } else {
-            console.log("⏸ No move zone — skip SL update");
+            console.log("⏸ Price not improved — skip SL update");
           }
         }
       }
