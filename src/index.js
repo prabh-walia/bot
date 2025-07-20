@@ -58,7 +58,21 @@ let ordersPlaced = [];
 
 let tradeCompletedAt = 0;
 let initialProfitBooked = false;
+const MIN_ORDER_QUANTITY = {
+  "SOL/USDT": 1,
+  "LTC/USDT": 0.16,
+  "ETH/USDT": 0.008,
+  "XRP/USDT": 4,
+  "SUI/USDT": 3,
+  "ALGO/USDT": 300,
+};
+const SL_PERCENTAGE = {
+  "1h": 0.009,
+  "30m": 0.007,
 
+  "2h": 0.011,
+  "4h": 0.03,
+};
 const getRandomDelay = () => Math.floor(Math.random() * (190 - 60 + 1)) + 100;
 
 const findTrades = async () => {
@@ -228,21 +242,6 @@ const findTrades = async () => {
     }
   }
 };
-const MIN_ORDER_QUANTITY = {
-  "SOL/USDT": 1,
-  "LTC/USDT": 0.16,
-  "ETH/USDT": 0.008,
-  "XRP/USDT": 4,
-  "SUI/USDT": 3,
-  "ALGO/USDT": 300,
-};
-const SL_PERCENTAGE = {
-  "1h": 0.009,
-  "30m": 0.007,
-
-  "2h": 0.011,
-  "4h": 0.03,
-};
 
 const main = async () => {
   try {
@@ -403,7 +402,7 @@ const goToSmallerFrame = async (type) => {
         ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
         try {
           await placeMarketOrder("buy", atr);
-          trackOpenPosition();
+          await trackOpenPosition();
           ordersPending = false;
           tradeCompletedAt = Date.now();
         } catch (err) {
@@ -424,7 +423,7 @@ const goToSmallerFrame = async (type) => {
         ordersPending = true;
         try {
           await placeMarketOrder("sell", atr);
-          trackOpenPosition();
+          await trackOpenPosition();
           ordersPending = false;
           tradeCompletedAt = Date.now();
         } catch (err) {
