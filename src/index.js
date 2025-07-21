@@ -469,7 +469,7 @@ const trackOpenPosition = async () => {
       const posSize = Math.abs(parseFloat(position.info.positionAmt));
       entryPrice = parseFloat(position.info.entryPrice);
       const side = parseFloat(position.info.positionAmt) > 0 ? "buy" : "sell";
-      const price = await getCurrentPrice(); // You need a price fetcher
+
       const unrealizedPnL = parseFloat(position.info.unRealizedProfit);
 
       console.log(
