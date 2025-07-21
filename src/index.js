@@ -449,7 +449,7 @@ const trackOpenPosition = async () => {
   let slUpdated = false;
   let initialPositionAmt = 0;
   let entryPrice = 0;
-
+  let slTightened = false;
   let trailingActive = false;
   let lastSLTriggerPrice = 0;
   let lastSLUpdateTime = 0;
@@ -475,6 +475,48 @@ const trackOpenPosition = async () => {
       console.log(
         `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${price} | PnL: ${unrealizedPnL}`
       );
+
+      const profitThreshold = ATR * 2.4;
+      const tightenSLDistance = ATR * 0.4;
+
+      if (
+        !slTightened &&
+        ((side === "buy" && price >= entryPrice + profitThreshold) ||
+          (side === "sell" && price <= entryPrice - profitThreshold))
+      ) {
+        console.log(
+          "🎯 Price reached profit threshold — tightening SL near entry"
+        );
+
+        const openOrders = await binance.fetchOpenOrders(SYMBOL);
+        for (const order of openOrders) {
+          if (order.type === "stop_market") {
+            await binance.cancelOrder(order.id, SYMBOL);
+            console.log(`🧹 Old SL canceled for tighten: ${order.id}`);
+          }
+        }
+
+        const slSide = side === "buy" ? "sell" : "buy";
+        const tightenedSL =
+          side === "buy"
+            ? entryPrice - tightenSLDistance
+            : entryPrice + tightenSLDistance;
+
+        await binance.createOrder(
+          SYMBOL,
+          "STOP_MARKET",
+          slSide,
+          posSize,
+          undefined,
+          { stopPrice: tightenedSL.toFixed(2) }
+        );
+
+        console.log("🔒 SL tightened near entry:", tightenedSL.toFixed(2));
+
+        // Optional: deactivate further trailing
+        slTightened = true;
+        trailingActive = false;
+      }
 
       if (initialPositionAmt === 0) initialPositionAmt = posSize;
 
@@ -508,6 +550,7 @@ const trackOpenPosition = async () => {
         );
 
         console.log("🛡️ Initial trailing SL placed at:", initialSL.toFixed(2));
+
         slUpdated = true;
       }
 
@@ -520,8 +563,8 @@ const trackOpenPosition = async () => {
 
         if (timeSinceLastUpdate >= TRAIL_INTERVAL_MS) {
           if (
-            (side === "buy" && price > lastSLTriggerPrice) ||
-            (side === "sell" && price < lastSLTriggerPrice)
+            (side === "buy" && price > lastSLTriggerPrice * 1.01) ||
+            (side === "sell" && price < lastSLTriggerPrice * 0.99)
           ) {
             const newSL =
               side === "buy"
