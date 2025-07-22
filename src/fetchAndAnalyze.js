@@ -22,6 +22,20 @@ export const convertSymbol = (symbol) => {
     throw new Error("Invalid symbol format.");
   }
 };
+export const get2hEMA12 = async () => {
+  const candles = await binance.fetchOHLCV(symbol, "2h", undefined, 100);
+
+  // Extract close prices
+  const closes = candles.map((c) => c[4]);
+
+  const ema12 = calculateEMA(closes, 12);
+  const lastClosedIndex = closes.length - 2;
+
+  return {
+    close: closes[lastClosedIndex], // Close of the last completed candle
+    ema: ema12[lastClosedIndex], // EMA12 at the same candle
+  };
+};
 
 export const fetchAndAnalyzeCandles = async (size) => {
   try {

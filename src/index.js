@@ -9,6 +9,7 @@ import {
   checkFrequentSideways,
   convertSymbol,
   fetchAndAnalyzeCandlesFortrend,
+  get2hEMA12,
 } from "./fetchAndAnalyze.js";
 let trend;
 import { findTrend } from "./trendFinder.js";
@@ -177,14 +178,19 @@ const findTrades = async () => {
       }
       if (trend === "bullish") {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
+        const { ema, close } = await get2hEMA12();
+        const result2 = checkLastCandleforbigtrend(ema, close);
         console.log(
           "is near EMA ",
           result.isNearEMA,
           " HAMMER ? ",
-          result.isBullishHammer
+          result.isBullishHammer,
+          "2h ema close near ? ->",
+          result2.isNearEMA
         );
         if (
           result.isNearEMA &&
+          result2?.isNearEMA &&
           (result.isBullishHammer || result.isBullishEngulfing)
         ) {
           console.log("last candle is bullish hammer and  near ema");
@@ -209,8 +215,12 @@ const findTrades = async () => {
         //   );
       } else if (trend == "bearish") {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle);
+
+        const { ema, close } = await get2hEMA12();
+        const result2 = checkLastCandleforbigtrend(ema, close);
         if (
           result.isNearEMA &&
+          result2.isNearEMA &&
           (result.isInvertedHammer || result.isBearishEngulfing)
         ) {
           // const closingPrices = ohlcv.map((candle) => candle[4]);
@@ -308,7 +318,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const prevLow = prevCandle[3];
   const prevClose = prevCandle[4];
   console.log(" volume ->", vol);
-  const emaProximityRange = ema * 0.0085; // ~0.85%
+  const emaProximityRange = ema * 0.007; // ~0.85%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
   const candleRange = high - low;
   const minBodySizePercent = 0.55; // 50% of the total range required as body
@@ -359,6 +369,28 @@ function checkLastCandle(candle, ema, prevCandle) {
     isInvertedHammer,
     isBullishEngulfing,
     isBearishEngulfing,
+  };
+}
+function checkLastCandleforbigtrend(ema, close) {
+  let upperProximityRange, lowerProximityRange;
+
+  if (trend === "bullish") {
+    upperProximityRange = ema * 0.008; // 0.8%
+    lowerProximityRange = ema * 0.005; // 0.5%
+  } else if (trend === "bearish") {
+    upperProximityRange = ema * 0.005; // 0.5%
+    lowerProximityRange = ema * 0.008; // 0.8%
+  } else {
+    // fallback in case trend is undefined or unknown
+    upperProximityRange = ema * 0.0065;
+    lowerProximityRange = ema * 0.0065;
+  }
+
+  const isNearEMA =
+    close <= ema + upperProximityRange && close >= ema - lowerProximityRange;
+
+  return {
+    isNearEMA,
   };
 }
 
