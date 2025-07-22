@@ -23,7 +23,7 @@ export const convertSymbol = (symbol) => {
   }
 };
 export const get2hEMA12 = async () => {
-  const candles = await binance.fetchOHLCV(symbol, "2h", undefined, 100);
+  const candles = await binance.fetchOHLCV(SYMBOL, "2h", undefined, 100);
 
   // Extract close prices
   const closes = candles.map((c) => c[4]);
