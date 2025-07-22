@@ -23,6 +23,10 @@ export const convertSymbol = (symbol) => {
   }
 };
 export const get2hEMA12 = async () => {
+  const status = await Status.findOne();
+  if (!status) throw new Error("Status not found");
+
+  const SYMBOL = convertSymbol(status.symbol);
   const candles = await binance.fetchOHLCV(SYMBOL, "2h", undefined, 100);
 
   // Extract close prices
