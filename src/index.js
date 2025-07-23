@@ -336,15 +336,13 @@ function checkLastCandle(candle, ema, prevCandle) {
     lowerWick > bodySize * 1.1 &&
     upperWick < lowerWick * 0.7 &&
     bodySize > 0 &&
-    bodySize <= lowerWick &&
-    isVolumeConfirmation;
+    bodySize <= lowerWick;
 
   const isInvertedHammer =
     upperWick > bodySize * 1.1 &&
     lowerWick < upperWick * 0.7 &&
     bodySize > 0 &&
-    bodySize <= upperWick &&
-    isVolumeConfirmation;
+    bodySize <= upperWick;
 
   // ✅ Improved Bullish Engulfing
   const isBullishEngulfing =
@@ -352,8 +350,7 @@ function checkLastCandle(candle, ema, prevCandle) {
     close > open && // current green
     open < prevClose && // opens below previous close
     close >= prevHigh &&
-    isBodyBigEnough &&
-    isVolumeConfirmation; // closes at or above previous high
+    isBodyBigEnough;
 
   // ✅ Improved Bearish Engulfing
   const isBearishEngulfing =
@@ -361,8 +358,7 @@ function checkLastCandle(candle, ema, prevCandle) {
     close < open && // current red
     open > prevClose && // opens above previous close
     close <= prevLow &&
-    isBodyBigEnough &&
-    isVolumeConfirmation; // closes at or below previous low
+    isBodyBigEnough;
 
   return {
     isNearEMA,
