@@ -36,6 +36,7 @@ export const get2hEMA12 = async () => {
 
   // Get EMA using all closed candles
   const ema = calculateEMA(closedCandles, 12);
+  j;
 
   // Return EMA and last closed price
   return {
