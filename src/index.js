@@ -376,11 +376,11 @@ function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
   if (trend === "bullish") {
-    upperProximityRange = ema * 0.008; // 0.8%
-    lowerProximityRange = ema * 0.005; // 0.5%
+    upperProximityRange = ema * 0.01; // 0.8%
+    lowerProximityRange = ema * 0.006; // 0.5%
   } else if (trend === "bearish") {
-    upperProximityRange = ema * 0.005; // 0.5%
-    lowerProximityRange = ema * 0.008; // 0.8%
+    upperProximityRange = ema * 0.006; // 0.5%
+    lowerProximityRange = ema * 0.01; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
     upperProximityRange = ema * 0.0065;
