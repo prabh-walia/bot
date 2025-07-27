@@ -566,7 +566,7 @@ const trackOpenPosition = async () => {
         currentSLATRMultiplier = 3.5;
 
         const initialSL =
-          side === "buy" ? price - ATR * 3.5 : price + ATR * 3.5;
+          side === "buy" ? price - ATR * 4.5 : price + ATR * 4.5;
         const slSide = side === "buy" ? "sell" : "buy";
 
         await binance.createOrder(
@@ -638,7 +638,7 @@ const placeMarketOrder = async (side, atr) => {
 
   ATR = atr;
   const slMultiplier = 2.3;
-  const tp1Multiplier = 7.9;
+  const tp1Multiplier = 8.5;
 
   const slSide = side === "buy" ? "sell" : "buy";
   const entryPrice = price;
