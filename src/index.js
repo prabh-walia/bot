@@ -158,7 +158,7 @@ const findTrades = async () => {
       const [, , high, low, close] = latestCandle;
       // const pivots = calculatePivotPoints({ high, low, close });
       //s console.log("pivots for today -", pivots);
-      if (price > bigEmas * 0.98) {
+      if (close > smallEmat * 0.98) {
         console.log("price is above ema");
         trend = "bullish";
       } else {
