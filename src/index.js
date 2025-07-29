@@ -158,11 +158,33 @@ const findTrades = async () => {
       const [, , high, low, close] = latestCandle;
       // const pivots = calculatePivotPoints({ high, low, close });
       //s console.log("pivots for today -", pivots);
-      if (close > smallEmat * 0.98) {
-        console.log("price is above ema");
+      const percentDiff = ((close - smallEmat) / smallEmat) * 100;
+
+      if (percentDiff >= 7.5) {
+        console.log(
+          `🔻 Close is ${percentDiff.toFixed(2)}% above EMA — Bearish reversal`
+        );
+        trend = "bearish";
+      } else if (percentDiff <= -6.5) {
+        console.log(
+          `🔺 Close is ${Math.abs(percentDiff).toFixed(
+            2
+          )}% below EMA — Bullish reversal`
+        );
+        trend = "bullish";
+      } else if (close > smallEmat * 0.99) {
+        console.log(
+          `📈 Close is above EMA (${percentDiff.toFixed(
+            2
+          )}%) — Trend is bullish`
+        );
         trend = "bullish";
       } else {
-        console.log("price is below ema");
+        console.log(
+          `📉 Close is below EMA (${percentDiff.toFixed(
+            2
+          )}%) — Trend is bearish`
+        );
         trend = "bearish";
       }
       // } else {
@@ -319,7 +341,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const prevLow = prevCandle[3];
   const prevClose = prevCandle[4];
   console.log(" volume ->", vol);
-  const emaProximityRange = ema * 0.008; // ~0.85%
+  const emaProximityRange = ema * 0.015; // ~0.85%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
   const candleRange = high - low;
   const minBodySizePercent = 0.55; // 50% of the total range required as body
@@ -346,7 +368,6 @@ function checkLastCandle(candle, ema, prevCandle) {
 
   // ✅ Improved Bullish Engulfing
   const isBullishEngulfing =
-    prevClose < prevOpen && // previous red
     close > open && // current green
     open < prevClose && // opens below previous close
     close >= prevHigh &&
@@ -354,7 +375,6 @@ function checkLastCandle(candle, ema, prevCandle) {
 
   // ✅ Improved Bearish Engulfing
   const isBearishEngulfing =
-    prevClose > prevOpen && // previous green
     close < open && // current red
     open > prevClose && // opens above previous close
     close <= prevLow &&
@@ -372,11 +392,11 @@ function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
   if (trend === "bullish") {
-    upperProximityRange = ema * 0.01; // 0.8%
-    lowerProximityRange = ema * 0.006; // 0.5%
+    upperProximityRange = ema * 0.025; // 0.8%
+    lowerProximityRange = ema * 0.014; // 0.5%
   } else if (trend === "bearish") {
-    upperProximityRange = ema * 0.006; // 0.5%
-    lowerProximityRange = ema * 0.01; // 0.8%
+    upperProximityRange = ema * 0.014; // 0.5%
+    lowerProximityRange = ema * 0.024; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
     upperProximityRange = ema * 0.0065;
@@ -412,8 +432,8 @@ const goToSmallerFrame = async (type) => {
   console.log(`📊 Price: ${price} | High: ${high} | Low: ${low}`);
 
   const highBreak = high;
-  const lowInvalidation = low * 0.996; // 0.3% below low
-  const highInvalidation = high * 1.004; // for bearish setup
+  const lowInvalidation = low * 0.99; // 0.3% below low
+  const highInvalidation = high * 1.01; // for bearish setup
 
   console.log(
     `${type === "bullish" ? "🟢" : "🔴"} Waiting for ${
@@ -505,7 +525,7 @@ const trackOpenPosition = async () => {
         `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${price} | PnL: ${unrealizedPnL}`
       );
 
-      const profitThreshold = ATR * 2.4;
+      const profitThreshold = ATR * 2;
       const tightenSLDistance = ATR * 0.4;
 
       if (
@@ -563,7 +583,7 @@ const trackOpenPosition = async () => {
         trailingActive = true;
         lastSLTriggerPrice = price;
         lastSLUpdateTime = Date.now();
-        currentSLATRMultiplier = 3.5;
+        currentSLATRMultiplier = 3.7;
 
         const initialSL =
           side === "buy" ? price - ATR * 4.5 : price + ATR * 4.5;
@@ -588,7 +608,7 @@ const trackOpenPosition = async () => {
         const TRAIL_INTERVAL_MS = 90 * 60 * 1000; // 90 minutes
 
         const slSide = side === "buy" ? "sell" : "buy";
-        const atrMultiplier = 2.5;
+        const atrMultiplier = 3;
 
         if (timeSinceLastUpdate >= TRAIL_INTERVAL_MS) {
           if (
@@ -633,12 +653,12 @@ const trackOpenPosition = async () => {
 
 const placeMarketOrder = async (side, atr) => {
   const totalAmount = orderQuantity * multiple * 1.1;
-  const amountTP1 = totalAmount * 0.6;
-  const amountTP2 = totalAmount * 0.4;
+  const amountTP1 = totalAmount * 0.55;
+  const amountTP2 = totalAmount * 0.45;
 
   ATR = atr;
   const slMultiplier = 2.3;
-  const tp1Multiplier = 8.5;
+  const tp1Multiplier = 9.5;
 
   const slSide = side === "buy" ? "sell" : "buy";
   const entryPrice = price;
