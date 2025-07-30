@@ -200,7 +200,10 @@ const findTrades = async () => {
       }
       if (trend === "bullish") {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
-        const { ema, close } = await get2hEMA12();
+        const { close, ema, last2hCandle, prev2hCandle } = await get2hEMA12();
+
+        const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
+
         console.log("ema ->>>>", ema, close);
         const result2 = checkLastCandleforbigtrend(ema, close);
         console.log(
@@ -211,6 +214,7 @@ const findTrades = async () => {
           "2h ema close near ? ->",
           result2.isNearEMA
         );
+
         if (
           result.isNearEMA &&
           result2?.isNearEMA &&
@@ -224,7 +228,14 @@ const findTrades = async () => {
           await goToSmallerFrame("bullish");
           // }
         }
+        if (
+          result2?.isNearEMA &&
+          (result3.isBullishHammer || result3.isBullishEngulfing)
+        ) {
+          console.log("last candle (2h) is bullish hammer and  near ema");
 
+          await goToSmallerFrame("bullish");
+        }
         // let { stopLossPrice, ratio, patternType } =
         //   determineBullishTradeParameters(
         //     lastCandle,
@@ -239,12 +250,27 @@ const findTrades = async () => {
       } else if (trend == "bearish") {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle);
 
-        const { ema, close } = await get2hEMA12();
+        const { close, ema, last2hCandle, prev2hCandle } = await get2hEMA12();
         const result2 = checkLastCandleforbigtrend(ema, close);
+
+        const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
+
         if (
           result.isNearEMA &&
           result2.isNearEMA &&
           (result.isInvertedHammer || result.isBearishEngulfing)
+        ) {
+          // const closingPrices = ohlcv.map((candle) => candle[4]);
+          // console.log("last candle is beairhs and below EMA");
+          // const latestRSI20 = calculateRSI20(closingPrices);
+          // if (latestRSI20 > 20) {
+          await goToSmallerFrame("bearish");
+          console.log("returned from smaller frame");
+        }
+
+        if (
+          result2.isNearEMA &&
+          (result3.isInvertedHammer || result3.isBearishEngulfing)
         ) {
           // const closingPrices = ohlcv.map((candle) => candle[4]);
           // console.log("last candle is beairhs and below EMA");

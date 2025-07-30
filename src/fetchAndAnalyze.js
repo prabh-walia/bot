@@ -30,17 +30,15 @@ export const get2hEMA12 = async () => {
   const candles = await binance.fetchOHLCV(SYMBOL, "2h", undefined, 100);
 
   const closes = candles.map((c) => c[4]);
+  const ema12 = calculateEMA(closes, 12);
 
-  // Remove the last candle because it's still forming
-  const closedCandles = closes.slice(0, -1);
+  const lastClosedIndex = closes.length - 2;
 
-  // Get EMA using all closed candles
-  const ema = calculateEMA(closedCandles, 12);
-
-  // Return EMA and last closed price
   return {
-    ema,
-    close: closedCandles[closedCandles.length - 1],
+    close: closes[lastClosedIndex], // Close of last completed 2h candle
+    ema: ema12[lastClosedIndex], // EMA at that candle
+    last2hCandle: candles[lastClosedIndex], // Full candle [ts, open, high, low, close, volume]
+    prev2hCandle: candles[lastClosedIndex - 1], // Previous one
   };
 };
 
