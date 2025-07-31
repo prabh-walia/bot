@@ -173,7 +173,7 @@ const findTrades = async () => {
           )}% below EMA — Bullish reversal`
         );
         trend = "bullish";
-      } else if (close > smallEmat * 0.99) {
+      } else if (avg > smallEmat * 0.99) {
         console.log(
           `📈 Close is above EMA (${percentDiff.toFixed(
             2
