@@ -254,7 +254,14 @@ const findTrades = async () => {
         const result2 = checkLastCandleforbigtrend(ema, close);
 
         const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
-
+        console.log(
+          "is near EMA ",
+          result.isNearEMA,
+          " HAMMER ? ",
+          result.isInvertedHammer,
+          "2h ema close near ? ->",
+          result2.isNearEMA
+        );
         if (
           result.isNearEMA &&
           result2.isNearEMA &&
