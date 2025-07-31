@@ -156,9 +156,10 @@ const findTrades = async () => {
       const { smallEmat, bigEmas, latestCandle } =
         await fetchAndAnalyzeCandlesFortrend();
       const [, , high, low, close] = latestCandle;
+      const avg = (high + low + close) / 3;
       // const pivots = calculatePivotPoints({ high, low, close });
       //s console.log("pivots for today -", pivots);
-      const percentDiff = ((close - smallEmat) / smallEmat) * 100;
+      const percentDiff = ((avg - smallEmat) / smallEmat) * 100;
 
       if (percentDiff >= 7.5) {
         console.log(
@@ -250,9 +251,10 @@ const findTrades = async () => {
       } else if (trend == "bearish") {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle);
 
-        const { close, ema, last2hCandle, prev2hCandle } = await get2hEMA12();
+        const { avg, close, ema, last2hCandle, prev2hCandle } =
+          await get2hEMA12();
         console.log("ema-o ->", last2hCandle, close);
-        const result2 = checkLastCandleforbigtrend(ema, close);
+        const result2 = checkLastCandleforbigtrend(ema, avg);
 
         const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
         console.log(
@@ -426,11 +428,11 @@ function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
   if (trend === "bullish") {
-    upperProximityRange = ema * 0.025; // 0.8%
-    lowerProximityRange = ema * 0.02; // 0.5%
+    upperProximityRange = ema * 0.02; // 0.8%
+    lowerProximityRange = ema * 0.015; // 0.5%
   } else if (trend === "bearish") {
-    upperProximityRange = ema * 0.02; // 0.5%
-    lowerProximityRange = ema * 0.024; // 0.8%
+    upperProximityRange = ema * 0.015; // 0.5%
+    lowerProximityRange = ema * 0.02; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
     upperProximityRange = ema * 0.0065;

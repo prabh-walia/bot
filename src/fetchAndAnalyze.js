@@ -33,8 +33,11 @@ export const get2hEMA12 = async () => {
   const ema12 = calculateEMA(closes, 12);
 
   const lastClosedIndex = closes.length - 2;
+  const lastCandle = candles[lastClosedIndex];
+  const avgPrice = (lastCandle[2] + lastCandle[3] + lastCandle[4]) / 3;
 
   return {
+    avg: avgPrice,
     close: closes[lastClosedIndex], // Close of last completed 2h candle
     ema: ema12, // EMA at that candle
     last2hCandle: candles[lastClosedIndex], // Full candle [ts, open, high, low, close, volume]
