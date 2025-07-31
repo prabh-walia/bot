@@ -438,7 +438,7 @@ function checkLastCandleforbigtrend(ema, close) {
 
   const isNearEMA =
     price <= ema + upperProximityRange && price >= ema - lowerProximityRange;
-
+  console.log("ema ->", ema, "price--", price);
   return {
     isNearEMA,
   };
