@@ -80,7 +80,7 @@ const findTrades = async () => {
   while (true) {
     try {
       const now = new Date();
-      const nextIntervalMinutes = Math.ceil(now.getMinutes() / 5) * 5;
+      const nextIntervalMinutes = Math.ceil(now.getMinutes() / 1) * 1;
       const nextInterval = new Date(now);
       nextInterval.setMinutes(nextIntervalMinutes, 0, 0);
       nextInterval.setMilliseconds(100);
@@ -89,7 +89,7 @@ const findTrades = async () => {
 
       if (delay < 0) {
         // If the calculated time is in the past, adjust to the next 5-minute interval
-        delay += 5 * 60 * 1000;
+        delay += 1 * 60 * 1000;
       }
 
       await new Promise((resolve) => setTimeout(resolve, delay - 1));
@@ -251,6 +251,7 @@ const findTrades = async () => {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle);
 
         const { close, ema, last2hCandle, prev2hCandle } = await get2hEMA12();
+        console.log("ema-o ->", ema);
         const result2 = checkLastCandleforbigtrend(ema, close);
 
         const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
