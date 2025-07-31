@@ -251,7 +251,7 @@ const findTrades = async () => {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle);
 
         const { close, ema, last2hCandle, prev2hCandle } = await get2hEMA12();
-        console.log("ema-o ->", ema);
+        console.log("ema-o ->", last2hCandle, close);
         const result2 = checkLastCandleforbigtrend(ema, close);
 
         const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);

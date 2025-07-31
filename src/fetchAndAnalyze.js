@@ -36,7 +36,7 @@ export const get2hEMA12 = async () => {
 
   return {
     close: closes[lastClosedIndex], // Close of last completed 2h candle
-    ema: ema12[lastClosedIndex], // EMA at that candle
+    ema: ema12, // EMA at that candle
     last2hCandle: candles[lastClosedIndex], // Full candle [ts, open, high, low, close, volume]
     prev2hCandle: candles[lastClosedIndex - 1], // Previous one
   };
