@@ -201,12 +201,13 @@ const findTrades = async () => {
       }
       if (trend === "bullish") {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
-        const { close, ema, last2hCandle, prev2hCandle } = await get2hEMA12();
+        const { avg, close, ema, last2hCandle, prev2hCandle } =
+          await get2hEMA12();
 
         const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
 
         console.log("ema ->>>>", ema, close);
-        const result2 = checkLastCandleforbigtrend(ema, close);
+        const result2 = checkLastCandleforbigtrend(ema, avg);
         console.log(
           "is near EMA ",
           result.isNearEMA,
