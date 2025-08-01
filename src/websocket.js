@@ -9,7 +9,6 @@ const initWebSocket = (symbol) => {
   if (ws) {
     console.warn("WebSocket already initialized");
     ws.close();
-    return;
   }
 
   const wsUrl = `wss://fstream.binance.com/ws/${symbol}@trade`;
