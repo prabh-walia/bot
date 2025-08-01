@@ -62,10 +62,11 @@ let initialProfitBooked = false;
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
-  "ETH/USDT": 0.008,
+  "ETH/USDT": 0.009,
   "XRP/USDT": 4,
   "SUI/USDT": 3,
   "ALGO/USDT": 300,
+  "ENA/USDT": 20,
 };
 const SL_PERCENTAGE = {
   "1h": 0.009,
@@ -75,6 +76,20 @@ const SL_PERCENTAGE = {
   "4h": 0.03,
 };
 const getRandomDelay = () => Math.floor(Math.random() * (190 - 60 + 1)) + 100;
+
+const isSymbolNear2hEMA = async (symbol) => {
+  const { ema, close } = await get2hEMA12(symbol);
+  const percentDiff = (Math.abs(close - ema) / ema) * 100;
+  const proximityThreshold = 2.2; // percent
+
+  return {
+    isNear: percentDiff <= proximityThreshold,
+    symbol,
+    ema,
+    close,
+    percentDiff,
+  };
+};
 
 const findTrades = async () => {
   while (true) {
@@ -116,11 +131,38 @@ const findTrades = async () => {
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
 
+      const prioritySymbols = ["SUI/USDT", "ENA/USDT", "ETH/USDT"];
+      let selectedSymbol = null;
+
+      for (const sym of prioritySymbols) {
+        const result = await isSymbolNear2hEMA(sym);
+        console.log(
+          `🔍 Checking ${sym} — % diff: ${result.percentDiff.toFixed(2)}%`
+        );
+
+        if (result.isNear) {
+          selectedSymbol = sym;
+          console.log(`✅ Selected symbol: ${selectedSymbol}`);
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2220));
+      }
+
+      if (!selectedSymbol) {
+        console.log("❌ No symbol is near 2h EMA. Skipping this cycle.");
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait 5s before next loop
+        continue; // skip rest of logic for now
+      }
+
+      // Set it globally if needed
+      SYMBOL = convertSymbol(selectedSymbol);
+
       console.log("Fetching and analyzing candles...");
 
       await new Promise((resolve) => setTimeout(resolve, fetchInterval));
       const { ohlcv, bigEma, smallEma, atr } = await fetchAndAnalyzeCandles(
-        "small"
+        "small",
+        SYMBOL
       ); // 30 min candles with ema
 
       console.log("Candles fetched and analyzed. and atr is ", atr);
@@ -154,7 +196,7 @@ const findTrades = async () => {
       console.log("small ema =", smallEma);
 
       const { smallEmat, bigEmas, latestCandle } =
-        await fetchAndAnalyzeCandlesFortrend();
+        await fetchAndAnalyzeCandlesFortrend(SYMBOL);
       const [, , high, low, close] = latestCandle;
       const avg = (high + low + close) / 3;
       // const pivots = calculatePivotPoints({ high, low, close });
@@ -202,7 +244,7 @@ const findTrades = async () => {
       if (trend === "bullish") {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
         const { avg, close, ema, last2hCandle, prev2hCandle } =
-          await get2hEMA12();
+          await get2hEMA12(SYMBOL);
 
         const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
 
@@ -253,7 +295,7 @@ const findTrades = async () => {
         const result = checkLastCandle(lastCandle, smallEma, prevCandle);
 
         const { avg, close, ema, last2hCandle, prev2hCandle } =
-          await get2hEMA12();
+          await get2hEMA12(SYMBOL);
         console.log("ema-o ->", last2hCandle, close);
         const result2 = checkLastCandleforbigtrend(ema, avg);
 
@@ -455,7 +497,7 @@ const goToSmallerFrame = async (type) => {
     return;
   }
 
-  const { ohlcv, atr } = await fetchAndAnalyzeCandles("small");
+  const { ohlcv, atr } = await fetchAndAnalyzeCandles("small", SYMBOL);
   if (!ohlcv || ohlcv.length === 0) {
     console.error("No OHLCV data available");
     return;

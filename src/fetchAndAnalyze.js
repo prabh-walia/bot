@@ -22,11 +22,7 @@ export const convertSymbol = (symbol) => {
     throw new Error("Invalid symbol format.");
   }
 };
-export const get2hEMA12 = async () => {
-  const status = await Status.findOne();
-  if (!status) throw new Error("Status not found");
-
-  const SYMBOL = convertSymbol(status.symbol);
+export const get2hEMA12 = async (SYMBOL) => {
   const candles = await binance.fetchOHLCV(SYMBOL, "2h", undefined, 100);
 
   const closes = candles.map((c) => c[4]);
@@ -45,12 +41,11 @@ export const get2hEMA12 = async () => {
   };
 };
 
-export const fetchAndAnalyzeCandles = async (size) => {
+export const fetchAndAnalyzeCandles = async (size, symbol) => {
   try {
     const status = await Status.findOne();
     if (!status) throw new Error("Status not found");
 
-    const SYMBOL = convertSymbol(status.symbol);
     const HigherEMA = status.trendStatus?.higherEMA;
     const LowerEMA = status.trendStatus?.lowerEMA;
 
@@ -66,7 +61,7 @@ export const fetchAndAnalyzeCandles = async (size) => {
         : status?.trendStatus?.sourceTimeframe
     );
 
-    const ohlcv = await binance.fetchOHLCV(SYMBOL, TIMEFRAME, undefined, LIMIT);
+    const ohlcv = await binance.fetchOHLCV(symbol, TIMEFRAME, undefined, LIMIT);
     const closingPrices = ohlcv.map((entry) => entry[4]);
     const bigEma = calculateEMA(closingPrices, HigherEMA);
     const smallEma = calculateEMA(closingPrices, LowerEMA);
@@ -106,12 +101,11 @@ function calculateATR(ohlcv, length = 20) {
   return rmaAtr;
 }
 
-export const fetchAndAnalyzeCandlesFortrend = async () => {
+export const fetchAndAnalyzeCandlesFortrend = async (SYMBOL) => {
   try {
     const status = await Status.findOne();
     if (!status) throw new Error("Status not found");
 
-    const SYMBOL = convertSymbol(status.symbol);
     const HigherEMA = status.trendStatus?.higherEMA;
     const LowerEMA = status.trendStatus?.lowerEMA;
 
