@@ -378,7 +378,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const prevLow = prevCandle[3];
   const prevClose = prevCandle[4];
   console.log(" volume ->", vol);
-  const emaProximityRange = ema * 0.015; // ~0.85%
+  const emaProximityRange = ema * 0.014; // ~0.85%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
   const candleRange = high - low;
   const minBodySizePercent = 0.55; // 50% of the total range required as body
