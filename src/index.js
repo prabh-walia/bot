@@ -161,12 +161,12 @@ const findTrades = async () => {
       //s console.log("pivots for today -", pivots);
       const percentDiff = ((avg - smallEmat) / smallEmat) * 100;
 
-      if (percentDiff >= 7.5) {
+      if (percentDiff >= 5.5) {
         console.log(
           `🔻 Close is ${percentDiff.toFixed(2)}% above EMA — Bearish reversal`
         );
         trend = "bearish";
-      } else if (percentDiff <= -6.5) {
+      } else if (percentDiff <= -5) {
         console.log(
           `🔺 Close is ${Math.abs(percentDiff).toFixed(
             2
