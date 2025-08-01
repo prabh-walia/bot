@@ -36,6 +36,9 @@ let high = null;
 let low = null;
 let ordersPending = false;
 let error = 0;
+let activeSymbol = null;
+let priceSocket = null;
+
 let neutral = false;
 let hasLoggedTradeTracking = false;
 let tradeExecutionOpen = false;
@@ -78,8 +81,8 @@ const SL_PERCENTAGE = {
 const getRandomDelay = () => Math.floor(Math.random() * (190 - 60 + 1)) + 100;
 
 const isSymbolNear2hEMA = async (symbol) => {
-  const { ema, close } = await get2hEMA12(symbol);
-  const percentDiff = (Math.abs(close - ema) / ema) * 100;
+  const { ema, close, avg } = await get2hEMA12(convertSymbol(symbol));
+  const percentDiff = (Math.abs(avg - ema) / ema) * 100;
   const proximityThreshold = 2.2; // percent
 
   return {
@@ -131,7 +134,7 @@ const findTrades = async () => {
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
 
-      const prioritySymbols = ["SUI/USDT", "ENA/USDT", "ETH/USDT"];
+      const prioritySymbols = ["suiusdt", "enausdt", "ethusdt"];
       let selectedSymbol = null;
 
       for (const sym of prioritySymbols) {
@@ -142,7 +145,7 @@ const findTrades = async () => {
 
         if (result.isNear) {
           selectedSymbol = sym;
-          console.log(`✅ Selected symbol: ${selectedSymbol}`);
+          console.log(`✅ Selected symbol: ${convertSymbol(selectedSymbol)}`);
           break;
         }
         await new Promise((resolve) => setTimeout(resolve, 2220));
@@ -155,7 +158,10 @@ const findTrades = async () => {
       }
 
       // Set it globally if needed
-      SYMBOL = selectedSymbol;
+      if (SYMBOL !== convertSymbol(selectedSymbol)) {
+        getRealTimePrice(selectedSymbol); // only starts if it's a new one
+      }
+      SYMBOL = convertSymbol(selectedSymbol);
       console.log("symbol ->", SYMBOL);
       console.log("Fetching and analyzing candles...");
 
