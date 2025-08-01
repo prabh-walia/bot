@@ -155,7 +155,7 @@ const findTrades = async () => {
       }
 
       // Set it globally if needed
-      SYMBOL = convertSymbol(selectedSymbol);
+      SYMBOL = selectedSymbol;
       console.log("symbol ->", SYMBOL);
       console.log("Fetching and analyzing candles...");
 
