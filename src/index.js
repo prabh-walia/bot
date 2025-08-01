@@ -156,7 +156,7 @@ const findTrades = async () => {
 
       // Set it globally if needed
       SYMBOL = convertSymbol(selectedSymbol);
-
+      console.log("symbol ->", SYMBOL);
       console.log("Fetching and analyzing candles...");
 
       await new Promise((resolve) => setTimeout(resolve, fetchInterval));
