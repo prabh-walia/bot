@@ -266,6 +266,7 @@ const findTrades = async () => {
           "2h ema close near ? ->",
           result2.isNearEMA
         );
+        await goToSmallerFrame("bearish");
         if (
           result.isNearEMA &&
           result2.isNearEMA &&
