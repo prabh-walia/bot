@@ -264,7 +264,7 @@ const findTrades = async () => {
           "2h ema close near ? ->",
           result2.isNearEMA
         );
-
+        console.log("CURRENT PRICE ->", price);
         if (
           result.isNearEMA &&
           result2?.isNearEMA &&
