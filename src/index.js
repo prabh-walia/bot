@@ -382,7 +382,7 @@ const main = async () => {
       return;
     }
     if (status.botStatus.isRunning) {
-      getRealTimePrice();
+      getRealTimePrice(status.symbol);
 
       const positions = await binance.fetchPositions();
       const position = positions.find(

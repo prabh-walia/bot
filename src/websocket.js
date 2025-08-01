@@ -8,6 +8,7 @@ const callbacks = [];
 const initWebSocket = (symbol) => {
   if (ws) {
     console.warn("WebSocket already initialized");
+    ws.close();
     return;
   }
 
