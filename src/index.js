@@ -266,7 +266,6 @@ const findTrades = async () => {
           "2h ema close near ? ->",
           result2.isNearEMA
         );
-        await goToSmallerFrame("bearish");
         if (
           result.isNearEMA &&
           result2.isNearEMA &&
@@ -505,7 +504,7 @@ const goToSmallerFrame = async (type) => {
         return;
       }
     } else if (type === "bearish") {
-      if (true) {
+      if (price <= low) {
         console.log("✅ Breakdown! Placing market SELL");
         ordersPending = true;
         try {
