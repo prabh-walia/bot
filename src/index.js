@@ -562,8 +562,8 @@ const trackOpenPosition = async () => {
         `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${price} | PnL: ${unrealizedPnL}`
       );
 
-      const profitThreshold = ATR * 2;
-      const tightenSLDistance = ATR * 0.4;
+      const profitThreshold = ATR * 1.75;
+      const tightenSLDistance = ATR * 0.5;
 
       if (
         !slTightened &&
@@ -622,8 +622,7 @@ const trackOpenPosition = async () => {
         lastSLUpdateTime = Date.now();
         currentSLATRMultiplier = 3.7;
 
-        const initialSL =
-          side === "buy" ? price - ATR * 4.5 : price + ATR * 4.5;
+        const initialSL = side === "buy" ? price - ATR * 5 : price + ATR * 5;
         const slSide = side === "buy" ? "sell" : "buy";
 
         await binance.createOrder(
@@ -645,12 +644,12 @@ const trackOpenPosition = async () => {
         const TRAIL_INTERVAL_MS = 90 * 60 * 1000; // 90 minutes
 
         const slSide = side === "buy" ? "sell" : "buy";
-        const atrMultiplier = 3;
+        const atrMultiplier = 4;
 
         if (timeSinceLastUpdate >= TRAIL_INTERVAL_MS) {
           if (
-            (side === "buy" && price > lastSLTriggerPrice * 1.01) ||
-            (side === "sell" && price < lastSLTriggerPrice * 0.99)
+            (side === "buy" && price > lastSLTriggerPrice * 1.015) ||
+            (side === "sell" && price < lastSLTriggerPrice * 0.985)
           ) {
             const newSL =
               side === "buy"
