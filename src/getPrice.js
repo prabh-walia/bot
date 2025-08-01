@@ -1,7 +1,7 @@
 import { Status } from "./model.js";
 import { trade } from "./globalVariables.js";
 
-import { initWebSocket, onPriceUpdate } from "./websocket.js";
+import { initWebSocket, onPriceUpdate, closeWebSocket } from "./websocket.js";
 export let price;
 let currentSocket = null;
 let activeSymbol = null;
@@ -11,13 +11,10 @@ export const getRealTimePrice = async (symbol) => {
       // ⛔ No need to reopen if already active
       return;
     }
-    if (currentSocket && currentSocket.close) {
-      console.log(`🔌 Closing socket for ${activeSymbol}`);
-      currentSocket.close();
-    }
+    closeWebSocket();
     console.log(`📡 Opening socket for ${symbol}`);
     activeSymbol = symbol;
-    currentSocket = initWebSocket(symbol);
+    initWebSocket(symbol);
 
     onPriceUpdate((prices) => {
       price = parseFloat(prices);

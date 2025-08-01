@@ -67,6 +67,7 @@ const closeWebSocket = () => {
     ws.close();
     ws = null;
   }
+  callbacks.length = 0;
 };
 
 export { initWebSocket, getCurrentPrice, onPriceUpdate, closeWebSocket };
