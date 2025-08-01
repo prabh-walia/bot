@@ -505,7 +505,7 @@ const goToSmallerFrame = async (type) => {
         return;
       }
     } else if (type === "bearish") {
-      if (price <= low) {
+      if (true) {
         console.log("✅ Breakdown! Placing market SELL");
         ordersPending = true;
         try {
