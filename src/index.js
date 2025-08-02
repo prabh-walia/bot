@@ -162,6 +162,7 @@ const findTrades = async () => {
         getRealTimePrice(selectedSymbol); // only starts if it's a new one
       }
       SYMBOL = convertSymbol(selectedSymbol);
+      orderQuantity = MIN_ORDER_QUANTITY[SYMBOL] || 1;
       console.log("symbol ->", SYMBOL);
       console.log("Fetching and analyzing candles...");
 
