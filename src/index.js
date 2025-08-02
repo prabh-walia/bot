@@ -56,6 +56,7 @@ let lastOrderExecuted = false;
 let lastSlOrderExecuted = false;
 let slPercentage;
 let ATR = 8;
+let weakness = false;
 let SL_TRAIL_INTERVAL = 3;
 let NO_MOVE_ZONE_PERCENT = 0.006;
 let ordersPlaced = [];
@@ -218,6 +219,7 @@ const findTrades = async () => {
           `🔻 Close is ${percentDiff.toFixed(2)}% above EMA — Bearish reversal`
         );
         trend = "bearish";
+        weakness = true;
       } else if (percentDiff <= -7) {
         console.log(
           `🔺 Close is ${Math.abs(percentDiff).toFixed(
@@ -225,6 +227,7 @@ const findTrades = async () => {
           )}% below EMA — Bullish reversal`
         );
         trend = "bullish";
+        weakness = true;
       } else if (avg > smallEmat * 0.99) {
         console.log(
           `📈 Close is above EMA (${percentDiff.toFixed(
@@ -232,6 +235,10 @@ const findTrades = async () => {
           )}%) — Trend is bullish`
         );
         trend = "bullish";
+        weakness = false;
+        if (percentDiff > 5) {
+          weakness = true;
+        }
       } else {
         console.log(
           `📉 Close is below EMA (${percentDiff.toFixed(
@@ -239,6 +246,10 @@ const findTrades = async () => {
           )}%) — Trend is bearish`
         );
         trend = "bearish";
+        weakness = false;
+        if (percentDiff < 5) {
+          weakness = true;
+        }
       }
       // } else {
       //   trend = await findTrend();
@@ -740,6 +751,9 @@ const trackOpenPosition = async () => {
 };
 
 const placeMarketOrder = async (side, atr) => {
+  if (weakness == true) {
+    multiple = multiple / 2;
+  }
   const totalAmount = orderQuantity * multiple * 1.1;
   const amountTP1 = totalAmount * 0.55;
   const amountTP2 = totalAmount * 0.45;
