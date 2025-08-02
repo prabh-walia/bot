@@ -63,11 +63,11 @@ const onPriceUpdate = (callback) => {
 
 // Function to close the WebSocket connection
 const closeWebSocket = () => {
+  callbacks.length = 0;
   if (ws) {
     ws.close();
     ws = null;
   }
-  callbacks.length = 0;
 };
 
 export { initWebSocket, getCurrentPrice, onPriceUpdate, closeWebSocket };

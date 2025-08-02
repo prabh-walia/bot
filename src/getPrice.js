@@ -17,7 +17,10 @@ export const getRealTimePrice = async (symbol) => {
     initWebSocket(symbol);
 
     onPriceUpdate((prices) => {
-      price = parseFloat(prices);
+      if (symbol === activeSymbol) {
+        price = parseFloat(prices);
+        console.log(`📈 Real-time price for ${symbol}: ${price}`);
+      }
     });
   } catch (err) {
     console.log("error ->", err);

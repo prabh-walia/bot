@@ -102,7 +102,7 @@ const findTrades = async () => {
   while (true) {
     try {
       const now = new Date();
-      const nextIntervalMinutes = Math.ceil(now.getMinutes() / 5) * 5;
+      const nextIntervalMinutes = Math.ceil(now.getMinutes() / 1) * 1;
       const nextInterval = new Date(now);
       nextInterval.setMinutes(nextIntervalMinutes, 0, 0);
       nextInterval.setMilliseconds(100);
@@ -111,7 +111,7 @@ const findTrades = async () => {
 
       if (delay < 0) {
         // If the calculated time is in the past, adjust to the next 5-minute interval
-        delay += 5 * 60 * 1000;
+        delay += 1 * 60 * 1000;
       }
 
       await new Promise((resolve) => setTimeout(resolve, delay - 1));
@@ -137,172 +137,229 @@ const findTrades = async () => {
 
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
+      if (ordersPending == false) {
+        const prioritySymbols = ["suiusdt", "enausdt", "ethusdt"];
+        let selectedSymbol = null;
 
-      const prioritySymbols = ["suiusdt", "enausdt", "ethusdt"];
-      let selectedSymbol = null;
+        for (const sym of prioritySymbols) {
+          const result = await isSymbolNear2hEMA(sym);
+          console.log(
+            `🔍 Checking ${sym} — % diff: ${result.percentDiff.toFixed(2)}%`
+          );
 
-      for (const sym of prioritySymbols) {
-        const result = await isSymbolNear2hEMA(sym);
-        console.log(
-          `🔍 Checking ${sym} — % diff: ${result.percentDiff.toFixed(2)}%`
-        );
-
-        if (result.isNear) {
-          selectedSymbol = sym;
-          console.log(`✅ Selected symbol: ${convertSymbol(selectedSymbol)}`);
-          break;
+          if (result.isNear) {
+            selectedSymbol = sym;
+            console.log(`✅ Selected symbol: ${convertSymbol(selectedSymbol)}`);
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 2220));
         }
-        await new Promise((resolve) => setTimeout(resolve, 2220));
-      }
 
-      if (!selectedSymbol) {
-        console.log("❌ No symbol is near 2h EMA. Skipping this cycle.");
-        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait 5s before next loop
-        continue; // skip rest of logic for now
-      }
+        if (!selectedSymbol) {
+          console.log("❌ No symbol is near 2h EMA. Skipping this cycle.");
+          await new Promise((resolve) => setTimeout(resolve, 5000)); // wait 5s before next loop
+          continue; // skip rest of logic for now
+        }
 
-      // Set it globally if needed
-      if (SYMBOL !== convertSymbol(selectedSymbol)) {
-        getRealTimePrice(selectedSymbol); // only starts if it's a new one
-      }
-      SYMBOL = convertSymbol(selectedSymbol);
-      orderQuantity = MIN_ORDER_QUANTITY[SYMBOL] || 1;
-      console.log("symbol ->", SYMBOL);
-      console.log("Fetching and analyzing candles...");
+        // Set it globally if needed
+        if (SYMBOL !== convertSymbol(selectedSymbol)) {
+          getRealTimePrice(selectedSymbol); // only starts if it's a new one
+        }
+        SYMBOL = convertSymbol(selectedSymbol);
+        orderQuantity = MIN_ORDER_QUANTITY[SYMBOL] || 1;
 
-      await new Promise((resolve) => setTimeout(resolve, fetchInterval));
-      const { ohlcv, bigEma, smallEma, atr } = await fetchAndAnalyzeCandles(
-        "small",
-        SYMBOL
-      ); // 30 min candles with ema
+        console.log("symbol ->", SYMBOL);
+        console.log("Fetching and analyzing candles...");
 
-      console.log("Candles fetched and analyzed. and atr is ", atr);
+        await new Promise((resolve) => setTimeout(resolve, fetchInterval));
+        const { ohlcv, bigEma, smallEma, atr } = await fetchAndAnalyzeCandles(
+          "small",
+          SYMBOL
+        ); // 30 min candles with ema
 
-      const lastCandle = ohlcv[ohlcv.length - 2];
+        console.log("Candles fetched and analyzed. and atr is ", atr);
 
-      console.log("last candle -", ohlcv[ohlcv.length - 2]);
-      const prevCandle = ohlcv[ohlcv.length - 3];
-      const secondLastCandle = ohlcv[ohlcv.length - 4];
-      const leftLen = 10;
-      const rightLen = 10;
+        const lastCandle = ohlcv[ohlcv.length - 2];
 
-      const highs = ohlcv.map((candle) => candle[2]); // Extract highs
-      const lows = ohlcv.map((candle) => candle[3]); // Extract lows
-      // const pivotHighs = findPivotHighs(highs, leftLen, rightLen);
-      // const pivotLows = findPivotLows(lows, leftLen, rightLen);
-      // const last2PivotHighs = pivotHighs.slice(-2);
-      // const last2PivotLows = pivotLows.slice(-2);
+        console.log("last candle -", ohlcv[ohlcv.length - 2]);
+        const prevCandle = ohlcv[ohlcv.length - 3];
+        const secondLastCandle = ohlcv[ohlcv.length - 4];
+        const leftLen = 10;
+        const rightLen = 10;
 
-      // const response = checkBullishPatternAboveEma(filteredSwings);
-      // if (response.patternMatched) {
-      // } else {
-      //   console.log("No pattern matched");
-      // }
-      trade === false && console.log("Finding Trades ....");
-      if (!hasLoggedFindingTrades) {
-        console.log("Finding Trades .........");
-        hasLoggedFindingTrades = true;
-      }
-      console.log("EMA->", bigEma);
-      console.log("small ema =", smallEma);
+        const highs = ohlcv.map((candle) => candle[2]); // Extract highs
+        const lows = ohlcv.map((candle) => candle[3]); // Extract lows
+        // const pivotHighs = findPivotHighs(highs, leftLen, rightLen);
+        // const pivotLows = findPivotLows(lows, leftLen, rightLen);
+        // const last2PivotHighs = pivotHighs.slice(-2);
+        // const last2PivotLows = pivotLows.slice(-2);
 
-      const { smallEmat, bigEmas, latestCandle } =
-        await fetchAndAnalyzeCandlesFortrend(SYMBOL);
-      const [, , high, low, close] = latestCandle;
-      const avg = (high + low + close) / 3;
-      // const pivots = calculatePivotPoints({ high, low, close });
-      //s console.log("pivots for today -", pivots);
-      const percentDiff = ((avg - smallEmat) / smallEmat) * 100;
+        // const response = checkBullishPatternAboveEma(filteredSwings);
+        // if (response.patternMatched) {
+        // } else {
+        //   console.log("No pattern matched");
+        // }
+        trade === false && console.log("Finding Trades ....");
+        if (!hasLoggedFindingTrades) {
+          console.log("Finding Trades .........");
+          hasLoggedFindingTrades = true;
+        }
+        console.log("EMA->", bigEma);
+        console.log("small ema =", smallEma);
 
-      if (percentDiff >= 7.5) {
-        console.log(
-          `🔻 Close is ${percentDiff.toFixed(2)}% above EMA — Bearish reversal`
-        );
-        trend = "bearish";
-        weakness = true;
-      } else if (percentDiff <= -7) {
-        console.log(
-          `🔺 Close is ${Math.abs(percentDiff).toFixed(
-            2
-          )}% below EMA — Bullish reversal`
-        );
-        trend = "bullish";
-        weakness = true;
-      } else if (avg > smallEmat * 0.99) {
-        console.log(
-          `📈 Close is above EMA (${percentDiff.toFixed(
-            2
-          )}%) — Trend is bullish`
-        );
-        trend = "bullish";
-        weakness = false;
-        if (percentDiff > 5) {
+        const { smallEmat, bigEmas, latestCandle } =
+          await fetchAndAnalyzeCandlesFortrend(SYMBOL);
+        const [, , high, low, close] = latestCandle;
+        const avg = (high + low + close) / 3;
+        // const pivots = calculatePivotPoints({ high, low, close });
+        //s console.log("pivots for today -", pivots);
+        const percentDiff = ((avg - smallEmat) / smallEmat) * 100;
+
+        if (percentDiff >= 7.5) {
+          console.log(
+            `🔻 Close is ${percentDiff.toFixed(
+              2
+            )}% above EMA — Bearish reversal`
+          );
+          trend = "bearish";
           weakness = true;
-        }
-      } else {
-        console.log(
-          `📉 Close is below EMA (${percentDiff.toFixed(
-            2
-          )}%) — Trend is bearish`
-        );
-        trend = "bearish";
-        weakness = false;
-        if (percentDiff < 5) {
+        } else if (percentDiff <= -7) {
+          console.log(
+            `🔺 Close is ${Math.abs(percentDiff).toFixed(
+              2
+            )}% below EMA — Bullish reversal`
+          );
+          trend = "bullish";
           weakness = true;
+        } else if (avg > smallEmat * 0.99) {
+          console.log(
+            `📈 Close is above EMA (${percentDiff.toFixed(
+              2
+            )}%) — Trend is bullish`
+          );
+          trend = "bullish";
+          weakness = false;
+          if (percentDiff > 5) {
+            weakness = true;
+          }
+        } else {
+          console.log(
+            `📉 Close is below EMA (${percentDiff.toFixed(
+              2
+            )}%) — Trend is bearish`
+          );
+          trend = "bearish";
+          weakness = false;
+          if (percentDiff < 5) {
+            weakness = true;
+          }
         }
-      }
-      // } else {
-      //   trend = await findTrend();
-      // }
+        // } else {
+        //   trend = await findTrend();
+        // }
 
-      console.log("trend ->", trend);
+        console.log("trend ->", trend);
 
-      if (trend === overallTrend) {
-        isTrueTrend = true;
-      } else {
-        isTrueTrend = false;
-      }
-      if (trend === "bullish") {
-        const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
-        const { avg, close, ema, last2hCandle, prev2hCandle } =
-          await get2hEMA12(SYMBOL);
-
-        const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
-
-        console.log("ema ->>>>", ema, close);
-        const result2 = checkLastCandleforbigtrend(ema, avg);
-        console.log(
-          "is near EMA ",
-          result.isNearEMA,
-          " HAMMER ? ",
-          result.isBullishHammer,
-          "2h ema close near ? ->",
-          result2.isNearEMA
-        );
-        console.log("CURRENT PRICE ->", price);
-        if (
-          result.isNearEMA &&
-          result2?.isNearEMA &&
-          (result.isBullishHammer || result.isBullishEngulfing)
-        ) {
-          console.log("last candle is bullish hammer and  near ema");
-          // const closingPrices = ohlcv.map((candle) => candle[4]);
-          // const latestRSI20 = calculateRSI20(closingPrices);
-
-          // if (latestRSI20 < 84) {
-          await goToSmallerFrame("bullish");
-          // }
+        if (trend === overallTrend) {
+          isTrueTrend = true;
+        } else {
+          isTrueTrend = false;
         }
-        if (
-          result2?.isNearEMA &&
-          (result3.isBullishHammer || result3.isBullishEngulfing)
-        ) {
-          console.log("last candle (2h) is bullish hammer and  near ema");
+        if (trend === "bullish") {
+          const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
+          const { avg, close, ema, last2hCandle, prev2hCandle } =
+            await get2hEMA12(SYMBOL);
 
-          await goToSmallerFrame("bullish");
+          const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
+
+          console.log("ema ->>>>", ema, close);
+          const result2 = checkLastCandleforbigtrend(ema, avg);
+          console.log(
+            "is near EMA ",
+            result.isNearEMA,
+            " HAMMER ? ",
+            result.isBullishHammer,
+            "2h ema close near ? ->",
+            result2.isNearEMA
+          );
+          console.log("CURRENT PRICE ->", price);
+          if (
+            result.isNearEMA &&
+            result2?.isNearEMA &&
+            (result.isBullishHammer || result.isBullishEngulfing)
+          ) {
+            console.log("last candle is bullish hammer and  near ema");
+            // const closingPrices = ohlcv.map((candle) => candle[4]);
+            // const latestRSI20 = calculateRSI20(closingPrices);
+
+            // if (latestRSI20 < 84) {
+            await goToSmallerFrame("bullish");
+            // }
+          }
+          if (
+            result2?.isNearEMA &&
+            (result3.isBullishHammer || result3.isBullishEngulfing)
+          ) {
+            console.log("last candle (2h) is bullish hammer and  near ema");
+
+            await goToSmallerFrame("bullish");
+          }
+          // let { stopLossPrice, ratio, patternType } =
+          //   determineBullishTradeParameters(
+          //     lastCandle,
+          //     prevCandle,
+          //     secondLastCandle,
+          //     zones,
+          //     price,
+          //     priceWithinRange,
+          //     priceWithinRange2,
+          //     ohlcv
+          //   );
+        } else if (trend == "bearish") {
+          const result = checkLastCandle(lastCandle, smallEma, prevCandle);
+
+          const { avg, close, ema, last2hCandle, prev2hCandle } =
+            await get2hEMA12(SYMBOL);
+          console.log("ema-o ->", last2hCandle, close);
+          const result2 = checkLastCandleforbigtrend(ema, avg);
+
+          const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
+          console.log(
+            "is near EMA ",
+            result.isNearEMA,
+            " HAMMER ? ",
+            result.isInvertedHammer,
+            "2h ema close near ? ->",
+            result2.isNearEMA
+          );
+          if (
+            result.isNearEMA &&
+            result2.isNearEMA &&
+            (result.isInvertedHammer || result.isBearishEngulfing)
+          ) {
+            // const closingPrices = ohlcv.map((candle) => candle[4]);
+            // console.log("last candle is beairhs and below EMA");
+            // const latestRSI20 = calculateRSI20(closingPrices);
+            // if (latestRSI20 > 20) {
+            await goToSmallerFrame("bearish");
+            console.log("returned from smaller frame");
+          }
+
+          if (
+            result2.isNearEMA &&
+            (result3.isInvertedHammer || result3.isBearishEngulfing)
+          ) {
+            // const closingPrices = ohlcv.map((candle) => candle[4]);
+            // console.log("last candle is beairhs and below EMA");
+            // const latestRSI20 = calculateRSI20(closingPrices);
+            // if (latestRSI20 > 20) {
+            await goToSmallerFrame("bearish");
+            console.log("returned from smaller frame");
+          }
         }
+
         // let { stopLossPrice, ratio, patternType } =
-        //   determineBullishTradeParameters(
+        //   determineBearishTradeParameters(
         //     lastCandle,
         //     prevCandle,
         //     secondLastCandle,
@@ -312,61 +369,7 @@ const findTrades = async () => {
         //     priceWithinRange2,
         //     ohlcv
         //   );
-      } else if (trend == "bearish") {
-        const result = checkLastCandle(lastCandle, smallEma, prevCandle);
-
-        const { avg, close, ema, last2hCandle, prev2hCandle } =
-          await get2hEMA12(SYMBOL);
-        console.log("ema-o ->", last2hCandle, close);
-        const result2 = checkLastCandleforbigtrend(ema, avg);
-
-        const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
-        console.log(
-          "is near EMA ",
-          result.isNearEMA,
-          " HAMMER ? ",
-          result.isInvertedHammer,
-          "2h ema close near ? ->",
-          result2.isNearEMA
-        );
-        if (
-          result.isNearEMA &&
-          result2.isNearEMA &&
-          (result.isInvertedHammer || result.isBearishEngulfing)
-        ) {
-          // const closingPrices = ohlcv.map((candle) => candle[4]);
-          // console.log("last candle is beairhs and below EMA");
-          // const latestRSI20 = calculateRSI20(closingPrices);
-          // if (latestRSI20 > 20) {
-          await goToSmallerFrame("bearish");
-          console.log("returned from smaller frame");
-        }
-
-        if (
-          result2.isNearEMA &&
-          (result3.isInvertedHammer || result3.isBearishEngulfing)
-        ) {
-          // const closingPrices = ohlcv.map((candle) => candle[4]);
-          // console.log("last candle is beairhs and below EMA");
-          // const latestRSI20 = calculateRSI20(closingPrices);
-          // if (latestRSI20 > 20) {
-          await goToSmallerFrame("bearish");
-          console.log("returned from smaller frame");
-        }
       }
-
-      // let { stopLossPrice, ratio, patternType } =
-      //   determineBearishTradeParameters(
-      //     lastCandle,
-      //     prevCandle,
-      //     secondLastCandle,
-      //     zones,
-      //     price,
-      //     priceWithinRange,
-      //     priceWithinRange2,
-      //     ohlcv
-      //   );
-
       console.log("errorZ - ", error);
     } catch (error) {
       error += error;
