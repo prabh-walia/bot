@@ -129,8 +129,8 @@ const findTrades = async () => {
         continue;
       }
 
-      if (Date.now() - tradeCompletedAt < 60 * 60 * 1000) {
-        console.log("Within the 60-minute cooldown period, waiting...");
+      if (Date.now() - tradeCompletedAt < 30 * 60 * 1000) {
+        console.log("Within the 30-minute cooldown period, waiting...");
         await new Promise((resolve) => setTimeout(resolve, 1000));
         continue;
       }
@@ -602,6 +602,7 @@ const trackOpenPosition = async () => {
   let initialPositionAmt = 0;
   let entryPrice = 0;
   let slTightened = false;
+  let slTightened2 = false;
   let trailingActive = false;
   let lastSLTriggerPrice = 0;
   let lastSLUpdateTime = 0;
@@ -628,8 +629,8 @@ const trackOpenPosition = async () => {
         `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${price} | PnL: ${unrealizedPnL}`
       );
 
-      const profitThreshold = ATR * 1.75;
-      const tightenSLDistance = ATR * 0.5;
+      const profitThreshold = ATR * 1.6;
+      const tightenSLDistance = ATR * 1.7;
 
       if (
         !slTightened &&
@@ -670,6 +671,47 @@ const trackOpenPosition = async () => {
         trailingActive = false;
       }
 
+      const profitThreshold2 = ATR * 5.5;
+      const tightenSLDistance2 = ATR * 0.4;
+
+      if (
+        !slTightened2 &&
+        ((side === "buy" && price >= entryPrice + profitThreshold2) ||
+          (side === "sell" && price <= entryPrice - profitThreshold2))
+      ) {
+        console.log(
+          "🎯 Price reached profit threshold — tightening SL near entry"
+        );
+
+        const openOrders = await binance.fetchOpenOrders(SYMBOL);
+        for (const order of openOrders) {
+          if (order.type === "stop_market") {
+            await binance.cancelOrder(order.id, SYMBOL);
+            console.log(`🧹 Old SL canceled for tighten: ${order.id}`);
+          }
+        }
+
+        const slSide = side === "buy" ? "sell" : "buy";
+        const tightenedSL =
+          side === "buy"
+            ? entryPrice - tightenSLDistance2
+            : entryPrice + tightenSLDistance2;
+
+        await binance.createOrder(
+          SYMBOL,
+          "STOP_MARKET",
+          slSide,
+          posSize,
+          undefined,
+          { stopPrice: tightenedSL.toFixed(2) }
+        );
+
+        console.log("🔒 SL tightened near entry:", tightenedSL.toFixed(2));
+
+        // Optional: deactivate further trailing
+        slTightened2 = true;
+        trailingActive = false;
+      }
       if (initialPositionAmt === 0) initialPositionAmt = posSize;
 
       if (!slUpdated && posSize <= initialPositionAmt * 0.8) {
