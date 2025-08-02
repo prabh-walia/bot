@@ -81,9 +81,12 @@ const SL_PERCENTAGE = {
 const getRandomDelay = () => Math.floor(Math.random() * (190 - 60 + 1)) + 100;
 
 const isSymbolNear2hEMA = async (symbol) => {
-  const { ema, close, avg } = await get2hEMA12(convertSymbol(symbol));
-  const percentDiff = (Math.abs(avg - ema) / ema) * 100;
-  const proximityThreshold = 2.2; // percent
+  const { ema, close, avg, currentCandle } = await get2hEMA12(
+    convertSymbol(symbol)
+  );
+  console.log("current close ->", currentCandle[4]);
+  const percentDiff = (Math.abs(currentCandle[4] - ema) / ema) * 100;
+  const proximityThreshold = 2.1; // percent
 
   return {
     isNear: percentDiff <= proximityThreshold,
