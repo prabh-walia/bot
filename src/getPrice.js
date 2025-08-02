@@ -19,7 +19,6 @@ export const getRealTimePrice = async (symbol) => {
     onPriceUpdate((prices) => {
       if (symbol === activeSymbol) {
         price = parseFloat(prices);
-        console.log(`📈 Real-time price for ${symbol}: ${price}`);
       }
     });
   } catch (err) {

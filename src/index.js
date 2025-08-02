@@ -102,7 +102,7 @@ const findTrades = async () => {
   while (true) {
     try {
       const now = new Date();
-      const nextIntervalMinutes = Math.ceil(now.getMinutes() / 1) * 1;
+      const nextIntervalMinutes = Math.ceil(now.getMinutes() / 5) * 5;
       const nextInterval = new Date(now);
       nextInterval.setMinutes(nextIntervalMinutes, 0, 0);
       nextInterval.setMilliseconds(100);
@@ -111,7 +111,7 @@ const findTrades = async () => {
 
       if (delay < 0) {
         // If the calculated time is in the past, adjust to the next 5-minute interval
-        delay += 1 * 60 * 1000;
+        delay += 5 * 60 * 1000;
       }
 
       await new Promise((resolve) => setTimeout(resolve, delay - 1));
