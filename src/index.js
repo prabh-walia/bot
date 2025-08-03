@@ -672,7 +672,7 @@ const trackOpenPosition = async () => {
         trailingActive = false;
       }
 
-      const profitThreshold2 = ATR * 5.5;
+      const profitThreshold2 = ATR * 4.5;
       const tightenSLDistance2 = ATR * 0.4;
 
       if (
