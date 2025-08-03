@@ -237,8 +237,9 @@ const findTrades = async () => {
               2
             )}%) — Trend is bullish`
           );
-          trend = "bullish";
           weakness = false;
+          trend = "bullish";
+
           if (percentDiff > 5) {
             weakness = true;
           }
@@ -250,7 +251,7 @@ const findTrades = async () => {
           );
           trend = "bearish";
           weakness = false;
-          if (percentDiff < 5) {
+          if (percentDiff > -5) {
             weakness = true;
           }
         }
