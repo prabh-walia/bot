@@ -797,10 +797,13 @@ const trackOpenPosition = async () => {
 };
 
 const placeMarketOrder = async (side, atr) => {
+  let totalAmount;
   if (weakness == true) {
-    multiple = multiple / 2;
+    totalAmount = (orderQuantity * multiple * 1.1) / 2;
+  } else {
+    totalAmount = orderQuantity * multiple * 1.1;
   }
-  const totalAmount = orderQuantity * multiple * 1.1;
+
   const amountTP1 = totalAmount * 0.55;
   const amountTP2 = totalAmount * 0.45;
 
