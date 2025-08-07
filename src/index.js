@@ -139,7 +139,7 @@ const findTrades = async () => {
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
       if (ordersPending == false) {
-        const prioritySymbols = ["myxusdt", "enausdt", "ethusdt"];
+        const prioritySymbols = ["myxusdt"];
         let selectedSymbol = null;
 
         for (const sym of prioritySymbols) {
