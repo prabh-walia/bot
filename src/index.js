@@ -857,7 +857,7 @@ const placeMarketOrder = async (side, atr) => {
     console.log("🎯 TP1 set at:", takeProfitPrice1);
 
     // ⚠️ DO NOT PLACE STATIC TP2 — we will trail that manually after TP1 hits
-
+    weakness = false;
     return {
       stopLossPrice,
       takeProfitPrice1,
@@ -867,6 +867,7 @@ const placeMarketOrder = async (side, atr) => {
     };
   } catch (err) {
     console.error("❌ Order placement failed:", err.message);
+    weakness = false;
     throw err;
   }
 };
