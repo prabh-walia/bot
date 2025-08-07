@@ -71,6 +71,7 @@ const MIN_ORDER_QUANTITY = {
   "SUI/USDT": 3,
   "ALGO/USDT": 300,
   "ENA/USDT": 20,
+  "MYX/USDT": 4.5,
 };
 const SL_PERCENTAGE = {
   "1h": 0.009,
@@ -87,7 +88,7 @@ const isSymbolNear2hEMA = async (symbol) => {
   );
   console.log("current close ->", currentCandle[4]);
   const percentDiff = (Math.abs(currentCandle[4] - ema) / ema) * 100;
-  const proximityThreshold = 2.1; // percent
+  const proximityThreshold = 8.1; // percent
 
   return {
     isNear: percentDiff <= proximityThreshold,
@@ -138,7 +139,7 @@ const findTrades = async () => {
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
       if (ordersPending == false) {
-        const prioritySymbols = ["suiusdt", "enausdt", "ethusdt"];
+        const prioritySymbols = ["myxusdt", "enausdt", "ethusdt"];
         let selectedSymbol = null;
 
         for (const sym of prioritySymbols) {
@@ -215,7 +216,8 @@ const findTrades = async () => {
         //s console.log("pivots for today -", pivots);
         const percentDiff = ((avg - smallEmat) / smallEmat) * 100;
 
-        if (percentDiff >= 7.5) {
+        if (percentDiff >= 10) {
+          // 7.5
           console.log(
             `🔻 Close is ${percentDiff.toFixed(
               2
@@ -223,7 +225,8 @@ const findTrades = async () => {
           );
           trend = "bearish";
           weakness = true;
-        } else if (percentDiff <= -7) {
+        } else if (percentDiff <= -10) {
+          //7
           console.log(
             `🔺 Close is ${Math.abs(percentDiff).toFixed(
               2
@@ -231,7 +234,8 @@ const findTrades = async () => {
           );
           trend = "bullish";
           weakness = true;
-        } else if (avg > smallEmat * 0.99) {
+        } else if (avg > smallEmat * 0.98) {
+          //99
           console.log(
             `📈 Close is above EMA (${percentDiff.toFixed(
               2
@@ -240,7 +244,8 @@ const findTrades = async () => {
           weakness = false;
           trend = "bullish";
 
-          if (percentDiff > 5) {
+          if (percentDiff > 8) {
+            //5
             weakness = true;
           }
         } else {
@@ -251,7 +256,8 @@ const findTrades = async () => {
           );
           trend = "bearish";
           weakness = false;
-          if (percentDiff > -5) {
+          if (percentDiff > -8) {
+            // 5
             weakness = true;
           }
         }
@@ -276,7 +282,6 @@ const findTrades = async () => {
           console.log("ema ->>>>", ema, close);
           const result2 = checkLastCandleforbigtrend(ema, avg);
           console.log(
-            "is near EMA ",
             result.isNearEMA,
             " HAMMER ? ",
             result.isBullishHammer,
@@ -445,7 +450,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const prevLow = prevCandle[3];
   const prevClose = prevCandle[4];
   console.log(" volume ->", vol);
-  const emaProximityRange = ema * 0.014; // ~0.85%
+  const emaProximityRange = ema * 0.025; // ~0.014%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
   const candleRange = high - low;
   const minBodySizePercent = 0.55; // 50% of the total range required as body
@@ -496,11 +501,11 @@ function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
   if (trend === "bullish") {
-    upperProximityRange = ema * 0.02; // 0.8%
-    lowerProximityRange = ema * 0.015; // 0.5%
+    upperProximityRange = ema * 0.04; // 0.02%
+    lowerProximityRange = ema * 0.03; // 0.015%
   } else if (trend === "bearish") {
-    upperProximityRange = ema * 0.015; // 0.5%
-    lowerProximityRange = ema * 0.02; // 0.8%
+    upperProximityRange = ema * 0.03; // 0.5%
+    lowerProximityRange = ema * 0.04; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
     upperProximityRange = ema * 0.0065;
@@ -536,8 +541,8 @@ const goToSmallerFrame = async (type) => {
   console.log(`📊 Price: ${price} | High: ${high} | Low: ${low}`);
 
   const highBreak = high;
-  const lowInvalidation = low * 0.99; // 0.3% below low
-  const highInvalidation = high * 1.01; // for bearish setup
+  const lowInvalidation = low * 0.97; // 99
+  const highInvalidation = high * 1.03; // 1.01
 
   console.log(
     `${type === "bullish" ? "🟢" : "🔴"} Waiting for ${
