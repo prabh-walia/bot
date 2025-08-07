@@ -813,8 +813,8 @@ const placeMarketOrder = async (side, atr) => {
   const amountTP2 = totalAmount * 0.45;
 
   ATR = atr;
-  const slMultiplier = 2.3;
-  const tp1Multiplier = 9.5;
+  const slMultiplier = 1.8; //2.3
+  const tp1Multiplier = 6.7; //9
 
   const slSide = side === "buy" ? "sell" : "buy";
   const entryPrice = price;
