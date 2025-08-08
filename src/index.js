@@ -88,7 +88,7 @@ const isSymbolNear2hEMA = async (symbol) => {
   );
   console.log("current close ->", currentCandle[4]);
   const percentDiff = (Math.abs(currentCandle[4] - ema) / ema) * 100;
-  const proximityThreshold = 8.1; // percent
+  const proximityThreshold = 2.2; // percent
 
   return {
     isNear: percentDiff <= proximityThreshold,
@@ -139,7 +139,7 @@ const findTrades = async () => {
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
       if (ordersPending == false) {
-        const prioritySymbols = ["myxusdt"];
+        const prioritySymbols = ["suiusdt, mxyusdt ethusdt"];
         let selectedSymbol = null;
 
         for (const sym of prioritySymbols) {
@@ -216,7 +216,7 @@ const findTrades = async () => {
         //s console.log("pivots for today -", pivots);
         const percentDiff = ((avg - smallEmat) / smallEmat) * 100;
 
-        if (percentDiff >= 10) {
+        if (percentDiff >= 7.5) {
           // 7.5
           console.log(
             `🔻 Close is ${percentDiff.toFixed(
@@ -225,7 +225,7 @@ const findTrades = async () => {
           );
           trend = "bearish";
           weakness = true;
-        } else if (percentDiff <= -10) {
+        } else if (percentDiff <= -7) {
           //7
           console.log(
             `🔺 Close is ${Math.abs(percentDiff).toFixed(
@@ -234,7 +234,7 @@ const findTrades = async () => {
           );
           trend = "bullish";
           weakness = true;
-        } else if (avg > smallEmat * 0.98) {
+        } else if (avg > smallEmat * 0.99) {
           //99
           console.log(
             `📈 Close is above EMA (${percentDiff.toFixed(
@@ -244,7 +244,7 @@ const findTrades = async () => {
           weakness = false;
           trend = "bullish";
 
-          if (percentDiff > 8) {
+          if (percentDiff > 5) {
             //5
             weakness = true;
           }
@@ -256,7 +256,7 @@ const findTrades = async () => {
           );
           trend = "bearish";
           weakness = false;
-          if (percentDiff > -8) {
+          if (percentDiff > -5) {
             // 5
             weakness = true;
           }
@@ -450,7 +450,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const prevLow = prevCandle[3];
   const prevClose = prevCandle[4];
   console.log(" volume ->", vol);
-  const emaProximityRange = ema * 0.025; // ~0.014%
+  const emaProximityRange = ema * 0.015; // ~0.014%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
   const candleRange = high - low;
   const minBodySizePercent = 0.55; // 50% of the total range required as body
@@ -501,11 +501,11 @@ function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
   if (trend === "bullish") {
-    upperProximityRange = ema * 0.04; // 0.02%
-    lowerProximityRange = ema * 0.03; // 0.015%
+    upperProximityRange = ema * 0.02; // 0.02%
+    lowerProximityRange = ema * 0.015; // 0.015%
   } else if (trend === "bearish") {
-    upperProximityRange = ema * 0.03; // 0.5%
-    lowerProximityRange = ema * 0.04; // 0.8%
+    upperProximityRange = ema * 0.015; // 0.5%
+    lowerProximityRange = ema * 0.02; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
     upperProximityRange = ema * 0.0065;
@@ -541,8 +541,8 @@ const goToSmallerFrame = async (type) => {
   console.log(`📊 Price: ${price} | High: ${high} | Low: ${low}`);
 
   const highBreak = high;
-  const lowInvalidation = low * 0.97; // 99
-  const highInvalidation = high * 1.03; // 1.01
+  const lowInvalidation = low * 0.99; // 99
+  const highInvalidation = high * 1.01; // 1.01
 
   console.log(
     `${type === "bullish" ? "🟢" : "🔴"} Waiting for ${
@@ -813,8 +813,8 @@ const placeMarketOrder = async (side, atr) => {
   const amountTP2 = totalAmount * 0.45;
 
   ATR = atr;
-  const slMultiplier = 1.8; //2.3
-  const tp1Multiplier = 6.7; //9
+  const slMultiplier = 2.3; //2.3
+  const tp1Multiplier = 8.8; //9
 
   const slSide = side === "buy" ? "sell" : "buy";
   const entryPrice = price;
