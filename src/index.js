@@ -130,7 +130,7 @@ const findTrades = async () => {
         continue;
       }
 
-      if (Date.now() - tradeCompletedAt < 30 * 60 * 1000) {
+      if (Date.now() - tradeCompletedAt < 60 * 60 * 1000) {
         console.log("Within the 30-minute cooldown period, waiting...");
         await new Promise((resolve) => setTimeout(resolve, 1000));
         continue;
@@ -450,7 +450,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const prevLow = prevCandle[3];
   const prevClose = prevCandle[4];
   console.log(" volume ->", vol);
-  const emaProximityRange = ema * 0.015; // ~0.014%
+  const emaProximityRange = ema * 0.013; // ~0.014%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
   const candleRange = high - low;
   const minBodySizePercent = 0.55; // 50% of the total range required as body
@@ -502,9 +502,9 @@ function checkLastCandleforbigtrend(ema, close) {
 
   if (trend === "bullish") {
     upperProximityRange = ema * 0.02; // 0.02%
-    lowerProximityRange = ema * 0.015; // 0.015%
+    lowerProximityRange = ema * 0.014; // 0.015%
   } else if (trend === "bearish") {
-    upperProximityRange = ema * 0.015; // 0.5%
+    upperProximityRange = ema * 0.014; // 0.5%
     lowerProximityRange = ema * 0.02; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
@@ -555,6 +555,7 @@ const goToSmallerFrame = async (type) => {
     if (ordersPending) return;
 
     if (type === "bullish") {
+      console.log("bullish but price is ->", price);
       if (price >= highBreak) {
         console.log("✅ Breakout! Placing market BUY");
         ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
@@ -576,6 +577,7 @@ const goToSmallerFrame = async (type) => {
         return;
       }
     } else if (type === "bearish") {
+      console.log("bearish but price is ->", price);
       if (price <= low) {
         console.log("✅ Breakdown! Placing market SELL");
         ordersPending = true;
