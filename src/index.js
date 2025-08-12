@@ -68,7 +68,7 @@ const MIN_ORDER_QUANTITY = {
   "LTC/USDT": 0.16,
   "ETH/USDT": 0.009,
   "XRP/USDT": 4,
-  "SUI/USDT": 3,
+  "SUI/USDT": 4,
   "ALGO/USDT": 300,
   "ENA/USDT": 20,
   "MYX/USDT": 4.5,
