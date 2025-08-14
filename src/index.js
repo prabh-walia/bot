@@ -60,7 +60,7 @@ let weakness = false;
 let SL_TRAIL_INTERVAL = 3;
 let NO_MOVE_ZONE_PERCENT = 0.006;
 let ordersPlaced = [];
-
+const MIN_NOTIONAL = 5;
 let tradeCompletedAt = 0;
 let initialProfitBooked = false;
 const MIN_ORDER_QUANTITY = {
@@ -804,19 +804,29 @@ const trackOpenPosition = async () => {
 };
 
 const placeMarketOrder = async (side, atr) => {
-  let totalAmount;
-  if (weakness == true) {
-    totalAmount = (orderQuantity * multiple * 1.1) / 2;
-  } else {
-    totalAmount = orderQuantity * multiple * 1.1;
+  // ===== Step 0: Prevent double entry =====
+  const positions = await binance.fetchPositions();
+  const position = positions.find(
+    (p) =>
+      p.info.symbol === SYMBOL.replace("/", "") &&
+      parseFloat(p.info.positionAmt) !== 0
+  );
+  if (position) {
+    console.log("⚠️ Position already open, skipping entry");
+    return;
+  }
+
+  let totalAmount = orderQuantity * multiple * 1.1;
+  if (weakness === true) {
+    totalAmount = totalAmount / 2;
   }
 
   const amountTP1 = totalAmount * 0.55;
   const amountTP2 = totalAmount * 0.45;
 
   ATR = atr;
-  const slMultiplier = 2.3; //2.3
-  const tp1Multiplier = 8.8; //9
+  const slMultiplier = 2.3;
+  const tp1Multiplier = 8.8;
 
   const slSide = side === "buy" ? "sell" : "buy";
   const entryPrice = price;
@@ -832,33 +842,52 @@ const placeMarketOrder = async (side, atr) => {
       : entryPrice - atr * tp1Multiplier;
 
   try {
-    // Step 1: Entry
-    await binance.createOrder(SYMBOL, "market", side, totalAmount);
-    console.log("✅ Market order placed");
-
-    // Step 2: Initial Stop Loss for full position
-    await binance.createOrder(
+    // ===== Step 1: Entry =====
+    const entryOrder = await binance.createOrder(
       SYMBOL,
-      "STOP_MARKET",
-      slSide,
-      totalAmount,
-      undefined,
-      { stopPrice: stopLossPrice.toFixed(2) }
+      "MARKET",
+      side,
+      totalAmount
     );
-    console.log("🛑 Initial SL set at:", stopLossPrice);
+    console.log("✅ Market order placed:", totalAmount, side);
 
-    // Step 3: Take Profit 1 for 60%
-    await binance.createOrder(
-      SYMBOL,
-      "TAKE_PROFIT_MARKET",
-      slSide,
-      amountTP1,
-      undefined,
-      { stopPrice: takeProfitPrice1.toFixed(2) }
-    );
-    console.log("🎯 TP1 set at:", takeProfitPrice1);
+    // ===== Step 2: SL placement =====
+    try {
+      await binance.createOrder(
+        SYMBOL,
+        "STOP_MARKET",
+        slSide,
+        totalAmount,
+        undefined,
+        { stopPrice: stopLossPrice.toFixed(2) }
+      );
+      console.log("🛑 SL set at:", stopLossPrice);
+    } catch (err) {
+      console.error("❌ SL placement failed:", err.message);
+      console.warn("🚨 Closing position immediately!");
+      await binance.createOrder(SYMBOL, "MARKET", slSide, totalAmount);
+      return; // abort
+    }
 
-    // ⚠️ DO NOT PLACE STATIC TP2 — we will trail that manually after TP1 hits
+    // ===== Step 3: TP1 placement =====
+    try {
+      await binance.createOrder(
+        SYMBOL,
+        "TAKE_PROFIT_MARKET",
+        slSide,
+        amountTP1,
+        undefined,
+        { stopPrice: takeProfitPrice1.toFixed(2) }
+      );
+      console.log("🎯 TP1 set at:", takeProfitPrice1);
+    } catch (err) {
+      console.error("❌ TP1 placement failed:", err.message);
+      console.warn("🚨 Closing position immediately!");
+      await binance.createOrder(SYMBOL, "MARKET", slSide, totalAmount);
+      return; // abort
+    }
+
+    // No static TP2 — will trail manually later
     weakness = false;
     return {
       stopLossPrice,
@@ -868,7 +897,7 @@ const placeMarketOrder = async (side, atr) => {
       side,
     };
   } catch (err) {
-    console.error("❌ Order placement failed:", err.message);
+    console.error("❌ Entry order failed:", err.message);
     weakness = false;
     throw err;
   }
