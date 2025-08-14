@@ -88,7 +88,7 @@ const isSymbolNear2hEMA = async (symbol) => {
   );
   console.log("current close ->", currentCandle[4]);
   const percentDiff = (Math.abs(currentCandle[4] - ema) / ema) * 100;
-  const proximityThreshold = 2.2; // percent
+  const proximityThreshold = 2.5; // percent
 
   return {
     isNear: percentDiff <= proximityThreshold,
@@ -216,7 +216,7 @@ const findTrades = async () => {
         //s console.log("pivots for today -", pivots);
         const percentDiff = ((avg - smallEmat) / smallEmat) * 100;
 
-        if (percentDiff >= 7.5) {
+        if (percentDiff >= 8) {
           // 7.5
           console.log(
             `🔻 Close is ${percentDiff.toFixed(
@@ -225,7 +225,7 @@ const findTrades = async () => {
           );
           trend = "bearish";
           weakness = true;
-        } else if (percentDiff <= -7) {
+        } else if (percentDiff <= -8) {
           //7
           console.log(
             `🔺 Close is ${Math.abs(percentDiff).toFixed(
@@ -234,7 +234,7 @@ const findTrades = async () => {
           );
           trend = "bullish";
           weakness = true;
-        } else if (avg > smallEmat * 0.99) {
+        } else if (avg > smallEmat * 0.98) {
           //99
           console.log(
             `📈 Close is above EMA (${percentDiff.toFixed(
@@ -244,7 +244,7 @@ const findTrades = async () => {
           weakness = false;
           trend = "bullish";
 
-          if (percentDiff > 5) {
+          if (percentDiff > 6) {
             //5
             weakness = true;
           }
@@ -256,7 +256,7 @@ const findTrades = async () => {
           );
           trend = "bearish";
           weakness = false;
-          if (percentDiff > -5) {
+          if (percentDiff > -6) {
             // 5
             weakness = true;
           }
@@ -501,11 +501,11 @@ function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
   if (trend === "bullish") {
-    upperProximityRange = ema * 0.02; // 0.02%
-    lowerProximityRange = ema * 0.014; // 0.015%
+    upperProximityRange = ema * 0.022; // 0.02%
+    lowerProximityRange = ema * 0.016; // 0.015%
   } else if (trend === "bearish") {
-    upperProximityRange = ema * 0.014; // 0.5%
-    lowerProximityRange = ema * 0.02; // 0.8%
+    upperProximityRange = ema * 0.016; // 0.5%
+    lowerProximityRange = ema * 0.022; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
     upperProximityRange = ema * 0.0065;
