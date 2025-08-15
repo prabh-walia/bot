@@ -611,6 +611,7 @@ const trackOpenPosition = async () => {
   let entryPrice = 0;
   let slTightened = false;
   let slTightened2 = false;
+  let slTightened3 = false;
   let trailingActive = false;
   let lastSLTriggerPrice = 0;
   let lastSLUpdateTime = 0;
@@ -637,8 +638,8 @@ const trackOpenPosition = async () => {
         `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${price} | PnL: ${unrealizedPnL}`
       );
 
-      const profitThreshold = ATR * 1.6;
-      const tightenSLDistance = ATR * 1.7;
+      const profitThreshold = ATR * 1.5;
+      const tightenSLDistance = ATR * 1.6;
 
       if (
         !slTightened &&
@@ -679,8 +680,8 @@ const trackOpenPosition = async () => {
         trailingActive = false;
       }
 
-      const profitThreshold2 = ATR * 4.5;
-      const tightenSLDistance2 = ATR * 0.4;
+      const profitThreshold2 = ATR * 4;
+      const tightenSLDistance2 = ATR * 0.3;
 
       if (
         !slTightened2 &&
@@ -720,6 +721,46 @@ const trackOpenPosition = async () => {
         slTightened2 = true;
         trailingActive = false;
       }
+
+      const profitThreshold3 = ATR * 6;
+
+      const newSL = side === "buy" ? price - ATR * 4.5 : price + ATR * 4.5;
+
+      if (
+        !slTightened3 &&
+        ((side === "buy" && price >= entryPrice + profitThreshold3) ||
+          (side === "sell" && price <= entryPrice - profitThreshold3))
+      ) {
+        console.log(
+          "🎯 Price reached profit threshold — tightening SL near entry"
+        );
+
+        const openOrders = await binance.fetchOpenOrders(SYMBOL);
+        for (const order of openOrders) {
+          if (order.type === "stop_market") {
+            await binance.cancelOrder(order.id, SYMBOL);
+            console.log(`🧹 Old SL canceled for tighten: ${order.id}`);
+          }
+        }
+
+        const slSide = side === "buy" ? "sell" : "buy";
+
+        await binance.createOrder(
+          SYMBOL,
+          "STOP_MARKET",
+          slSide,
+          posSize,
+          undefined,
+          { stopPrice: newSL.toFixed(2) }
+        );
+
+        console.log("🔒 SL tightened near entry:", newSL.toFixed(2));
+
+        // Optional: deactivate further trailing
+        slTightened3 = true;
+        trailingActive = false;
+      }
+
       if (initialPositionAmt === 0) initialPositionAmt = posSize;
 
       if (!slUpdated && posSize <= initialPositionAmt * 0.8) {
@@ -825,8 +866,8 @@ const placeMarketOrder = async (side, atr) => {
   const amountTP2 = totalAmount * 0.45;
 
   ATR = atr;
-  const slMultiplier = 2.3;
-  const tp1Multiplier = 8.8;
+  const slMultiplier = 2.2;
+  const tp1Multiplier = 8.5;
 
   const slSide = side === "buy" ? "sell" : "buy";
   const entryPrice = price;
