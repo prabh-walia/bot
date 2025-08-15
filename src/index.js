@@ -450,7 +450,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const prevLow = prevCandle[3];
   const prevClose = prevCandle[4];
   console.log(" volume ->", vol);
-  const emaProximityRange = ema * 0.013; // ~0.014%
+  const emaProximityRange = ema * 0.014; // ~0.014%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
   const candleRange = high - low;
   const minBodySizePercent = 0.55; // 50% of the total range required as body
@@ -501,11 +501,11 @@ function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
   if (trend === "bullish") {
-    upperProximityRange = ema * 0.022; // 0.02%
+    upperProximityRange = ema * 0.024; // 0.02%
     lowerProximityRange = ema * 0.016; // 0.015%
   } else if (trend === "bearish") {
     upperProximityRange = ema * 0.016; // 0.5%
-    lowerProximityRange = ema * 0.022; // 0.8%
+    lowerProximityRange = ema * 0.024; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
     upperProximityRange = ema * 0.0065;
