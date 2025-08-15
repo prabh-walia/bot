@@ -23,7 +23,7 @@ export const convertSymbol = (symbol) => {
   }
 };
 export const get2hEMA12 = async (SYMBOL) => {
-  const candles = await binance.fetchOHLCV(SYMBOL, "6h", undefined, 100);
+  const candles = await binance.fetchOHLCV(SYMBOL, "4h", undefined, 100);
 
   const closes = candles.map((c) => c[4]);
   const ema12 = calculateEMA(closes, 15);
