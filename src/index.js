@@ -52,12 +52,14 @@ let isTrueTrend = false;
 let SYMBOL;
 let orderQuantity;
 let multiple;
+let currentRisk;
 let lastOrderExecuted = false;
 let lastSlOrderExecuted = false;
 let slPercentage;
 let ATR = 8;
 let weakness = false;
 let SL_TRAIL_INTERVAL = 3;
+let consecutiveLosses = 0;
 let NO_MOVE_ZONE_PERCENT = 0.006;
 let ordersPlaced = [];
 const MIN_NOTIONAL = 5;
@@ -98,7 +100,26 @@ const isSymbolNear2hEMA = async (symbol) => {
     percentDiff,
   };
 };
-
+function updateRisk(result) {
+  if (result === "win") {
+    consecutiveLosses = 0;
+    // Reset only if > 50%
+    if (currentRisk > multiple * 0.5) {
+      currentRisk = multiple * 0.5;
+    }
+  } else if (result === "loss") {
+    consecutiveLosses++;
+    if (consecutiveLosses === 1) {
+      currentRisk = multiple * 0.5;
+    } else if (consecutiveLosses === 2) {
+      currentRisk = multiple * 0.8;
+      console.log(" 2 current risk  changed to  ", currentRisk);
+    } else {
+      currentRisk = multiple; // max risk
+      console.log("current risk  changed to basic ", currentRisk);
+    }
+  }
+}
 const findTrades = async () => {
   while (true) {
     try {
@@ -392,7 +413,7 @@ const main = async () => {
     SYMBOL = convertSymbol(status.symbol);
     overallTrend = await findTrend();
     multiple = status.orderMultiple;
-
+    currentRisk = multiple * 0.5;
     console.log("symbol is ->", SYMBOL);
     orderQuantity = MIN_ORDER_QUANTITY[SYMBOL] || 1;
     const timeframe = status.trendStatus?.sourceTimeframe;
@@ -401,6 +422,7 @@ const main = async () => {
 
     console.log("minimum Quantity->", orderQuantity);
     console.log("multiple ->", multiple);
+    console.log("current risk ->", currentRisk);
     if (!status) {
       console.log("Status document not found!");
       return;
@@ -615,6 +637,7 @@ const trackOpenPosition = async () => {
   let trailingActive = false;
   let lastSLTriggerPrice = 0;
   let lastSLUpdateTime = 0;
+  let lastUnrealizedPnL = 0;
   let currentSLATRMultiplier = 3.5;
 
   while (true) {
@@ -624,6 +647,8 @@ const trackOpenPosition = async () => {
       const position = await getActivePosition();
       if (!position || parseFloat(position.info.positionAmt) === 0) {
         console.log("✅ Position closed.");
+        const result = lastUnrealizedPnL > 0 ? "win" : "loss";
+        updateRisk(result);
         await cancelAllOpenOrders();
         return;
       }
@@ -633,7 +658,7 @@ const trackOpenPosition = async () => {
       const side = parseFloat(position.info.positionAmt) > 0 ? "buy" : "sell";
 
       const unrealizedPnL = parseFloat(position.info.unRealizedProfit);
-
+      lastUnrealizedPnL = unrealizedPnL;
       console.log(
         `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${price} | PnL: ${unrealizedPnL}`
       );
@@ -857,9 +882,9 @@ const placeMarketOrder = async (side, atr) => {
     return;
   }
 
-  let totalAmount = orderQuantity * multiple * 1.1;
+  let totalAmount = orderQuantity * currentRisk * 1.1;
   if (weakness === true) {
-    totalAmount = totalAmount / 2;
+    totalAmount = totalAmount / 1.5;
   }
 
   const amountTP1 = totalAmount * 0.55;
