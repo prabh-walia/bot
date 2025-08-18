@@ -665,7 +665,7 @@ const trackOpenPosition = async () => {
 
       const profitThreshold = ATR * 1.5;
       const tightenSLDistance = ATR * 1.6;
-      console;
+
       if (
         !slTightened &&
         ((side === "buy" && price >= entryPrice + profitThreshold) ||
@@ -675,7 +675,8 @@ const trackOpenPosition = async () => {
           "🎯 Price reached profit threshold — tightening SL near entry",
           entryPrice,
           price,
-          profitThreshold
+          profitThreshold,
+          side
         );
 
         const openOrders = await binance.fetchOpenOrders(SYMBOL);
