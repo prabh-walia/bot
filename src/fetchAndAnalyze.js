@@ -118,7 +118,7 @@ export const fetchAndAnalyzeCandlesFortrend = async (SYMBOL) => {
     const closingPrices = ohlcv.map((entry) => entry[4]);
     const bigEmas = calculateEMA(closingPrices, HigherEMA);
     const smallEmat = calculateEMA(closingPrices, LowerEMA);
-    const latestCandle = ohlcv[ohlcv.length - 2];
+    const latestCandle = ohlcv[ohlcv.length - 1];
 
     console.log("YS CURRENT PRICE IS THIS ->", getCurrentPrice());
 
