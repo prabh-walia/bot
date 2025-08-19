@@ -671,7 +671,7 @@ const trackOpenPosition = async () => {
         ((side === "buy" && price >= entryPrice + profitThreshold) ||
           (side === "sell" && price <= entryPrice - profitThreshold))
       ) {
-        console.log(
+        console.warn(
           "🎯 Price reached profit threshold — tightening SL near entry",
           entryPrice,
           price,
