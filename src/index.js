@@ -675,6 +675,7 @@ const trackOpenPosition = async () => {
       if (
         !slTightened &&
         unrealizedPnL > 0.1 &&
+        price !== 0 &&
         ((side === "buy" && price >= entryPrice + profitThreshold) ||
           (side === "sell" && price <= entryPrice - profitThreshold))
       ) {
@@ -700,6 +701,13 @@ const trackOpenPosition = async () => {
             ? entryPrice - tightenSLDistance
             : entryPrice + tightenSLDistance;
 
+        console.warn(
+          "tightened s ->",
+          tightenedSL,
+          " pos size",
+          posSize,
+          slSide
+        );
         await binance.createOrder(
           SYMBOL,
           "STOP_MARKET",
@@ -722,6 +730,7 @@ const trackOpenPosition = async () => {
       if (
         !slTightened2 &&
         unrealizedPnL > 0.1 &&
+        price !== 0 &&
         ((side === "buy" && price >= entryPrice + profitThreshold2) ||
           (side === "sell" && price <= entryPrice - profitThreshold2))
       ) {
@@ -766,6 +775,7 @@ const trackOpenPosition = async () => {
       if (
         !slTightened3 &&
         unrealizedPnL > 0.1 &&
+        price !== 0 &&
         ((side === "buy" && price >= entryPrice + profitThreshold3) ||
           (side === "sell" && price <= entryPrice - profitThreshold3))
       ) {
