@@ -368,10 +368,10 @@ const findTrades = async () => {
             // console.log("last candle is beairhs and below EMA");
             // const latestRSI20 = calculateRSI20(closingPrices);
             // if (latestRSI20 > 20) {
-            await goToSmallerFrame("bearish");
+            // await goToSmallerFrame("bearish");
             console.log("returned from smaller frame");
           }
-
+          await goToSmallerFrame("bearish");
           if (
             result2.isNearEMA &&
             (result3.isInvertedHammer || result3.isBearishEngulfing)
@@ -380,7 +380,7 @@ const findTrades = async () => {
             // console.log("last candle is beairhs and below EMA");
             // const latestRSI20 = calculateRSI20(closingPrices);
             // if (latestRSI20 > 20) {
-            await goToSmallerFrame("bearish");
+            // await goToSmallerFrame("bearish");
             console.log("returned from smaller frame");
           }
         }
@@ -941,41 +941,7 @@ const placeMarketOrder = async (side, atr) => {
     console.log("✅ Market order placed:", totalAmount, side);
 
     // ===== Step 2: SL placement =====
-    try {
-      await binance.createOrder(
-        SYMBOL,
-        "STOP_MARKET",
-        slSide,
-        totalAmount,
-        undefined,
-        { stopPrice: stopLossPrice.toFixed(2) }
-      );
-      console.log("🛑 SL set at:", stopLossPrice);
-    } catch (err) {
-      console.error("❌ SL placement failed:", err.message);
-      console.warn("🚨 Closing position immediately!");
-      await binance.createOrder(SYMBOL, "MARKET", slSide, totalAmount);
-      return; // abort
-    }
-
-    // ===== Step 3: TP1 placement =====
-    try {
-      await binance.createOrder(
-        SYMBOL,
-        "TAKE_PROFIT_MARKET",
-        slSide,
-        amountTP1,
-        undefined,
-        { stopPrice: takeProfitPrice1.toFixed(2) }
-      );
-      console.log("🎯 TP1 set at:", takeProfitPrice1);
-    } catch (err) {
-      console.error("❌ TP1 placement failed:", err.message);
-      console.warn("🚨 Closing position immediately!");
-      await binance.createOrder(SYMBOL, "MARKET", slSide, totalAmount);
-      return; // abort
-    }
-
+    await placeExitOrders(side, stopLossPrice, takeProfitPrice1, totalAmount);
     // No static TP2 — will trail manually later
     weakness = false;
     return {
@@ -991,6 +957,57 @@ const placeMarketOrder = async (side, atr) => {
     throw err;
   }
 };
+async function placeExitOrders(side, slPrice, tpPrice, qty) {
+  const slSide = side === "buy" ? "sell" : "buy";
+
+  let slPlaced = false;
+  let tpPlaced = false;
+
+  while (!slPlaced || !tpPlaced) {
+    // fetch a fresh price each loop
+    const ticker = await binance.fetchTicker(SYMBOL);
+    const price = parseFloat(ticker.last);
+
+    if (!price || price <= 0 || isNaN(price)) {
+      console.warn("⚠️ Invalid price detected, retrying...");
+      await delay(500); // small wait before retry
+      continue;
+    }
+
+    try {
+      if (!slPlaced) {
+        await binance.createOrder(
+          SYMBOL,
+          "STOP_MARKET",
+          slSide,
+          qty,
+          undefined,
+          { stopPrice: slPrice.toFixed(2), reduceOnly: true }
+        );
+        console.log("🛑 SL placed:", slPrice);
+        slPlaced = true;
+      }
+
+      if (!tpPlaced) {
+        await binance.createOrder(
+          SYMBOL,
+          "TAKE_PROFIT_MARKET",
+          slSide,
+          qty * 0.5, // example TP partial, adjust as you want
+          undefined,
+          { stopPrice: tpPrice.toFixed(2), reduceOnly: true }
+        );
+        console.log("🎯 TP placed:", tpPrice);
+        tpPlaced = true;
+      }
+    } catch (err) {
+      console.error("❌ Exit order failed:", err.message);
+      await delay(500); // wait a bit and retry
+    }
+  }
+
+  return console.log("✅ Both SL & TP placed successfully");
+}
 
 const getOrderPrices = async (type, lastCandle) => {
   console.log(" order already there2?", ordersPending);
