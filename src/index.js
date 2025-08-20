@@ -642,7 +642,13 @@ const trackOpenPosition = async () => {
 
   while (true) {
     await delay(Math.floor(Math.random() * (3100 - 2500 + 1)) + 2400);
-
+    if (!price || price == 0) {
+      console.warn(
+        "⚠️ Invalid price received, skipping this loop. Price:",
+        price
+      );
+      continue; // don't run SL tightening with bad data
+    }
     try {
       const position = await getActivePosition();
       if (!position || parseFloat(position.info.positionAmt) === 0) {
@@ -668,6 +674,7 @@ const trackOpenPosition = async () => {
 
       if (
         !slTightened &&
+        unrealizedPnL > 0.1 &&
         ((side === "buy" && price >= entryPrice + profitThreshold) ||
           (side === "sell" && price <= entryPrice - profitThreshold))
       ) {
@@ -714,6 +721,7 @@ const trackOpenPosition = async () => {
 
       if (
         !slTightened2 &&
+        unrealizedPnL > 0.1 &&
         ((side === "buy" && price >= entryPrice + profitThreshold2) ||
           (side === "sell" && price <= entryPrice - profitThreshold2))
       ) {
@@ -757,6 +765,7 @@ const trackOpenPosition = async () => {
 
       if (
         !slTightened3 &&
+        unrealizedPnL > 0.1 &&
         ((side === "buy" && price >= entryPrice + profitThreshold3) ||
           (side === "sell" && price <= entryPrice - profitThreshold3))
       ) {
