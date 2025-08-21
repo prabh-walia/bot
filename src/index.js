@@ -467,23 +467,26 @@ function checkLastCandle(candle, ema, prevCandle) {
   const low = candle[3];
   const close = candle[4];
   const vol = candle[5];
+
   const prevOpen = prevCandle[1];
   const prevHigh = prevCandle[2];
   const prevLow = prevCandle[3];
   const prevClose = prevCandle[4];
-  console.log(" volume ->", vol);
-  const emaProximityRange = ema * 0.014; // ~0.014%
+
+  const emaProximityRange = ema * 0.014; // ~1.4%
   const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
+
   const candleRange = high - low;
-  const minBodySizePercent = 0.55; // 50% of the total range required as body
-
-  const isBodyBigEnough =
-    Math.abs(close - open) >= candleRange * minBodySizePercent;
-
+  const minBodySizePercent = 0.55; // 55% of total range
   const bodySize = Math.abs(close - open);
   const lowerWick = Math.min(open, close) - low;
   const upperWick = high - Math.max(open, close);
-  const isVolumeConfirmation = vol > prevCandle[5] * 0.8;
+
+  // 1% cap for engulfing (body % of open)
+  const bodyPct = open ? bodySize / open : 0;
+  const withinOnePercent = bodyPct <= 0.01; // <= 1%
+
+  const isBodyBigEnough = bodySize >= candleRange * minBodySizePercent;
 
   const isBullishHammer =
     lowerWick > bodySize * 1.1 &&
@@ -497,19 +500,21 @@ function checkLastCandle(candle, ema, prevCandle) {
     bodySize > 0 &&
     bodySize <= upperWick;
 
-  // ✅ Improved Bullish Engulfing
+  // Bullish Engulfing (with ≤1% body cap)
   const isBullishEngulfing =
-    close > open && // current green
-    open < prevClose && // opens below previous close
-    close >= prevHigh &&
-    isBodyBigEnough;
+    close > open && // green
+    open < prevClose && // opens below prev close
+    close >= prevHigh && // closes above prev high
+    isBodyBigEnough &&
+    withinOnePercent; // <= 1%
 
-  // ✅ Improved Bearish Engulfing
+  // Bearish Engulfing (with ≤1% body cap)
   const isBearishEngulfing =
-    close < open && // current red
-    open > prevClose && // opens above previous close
-    close <= prevLow &&
-    isBodyBigEnough;
+    close < open && // red
+    open > prevClose && // opens above prev close
+    close <= prevLow && // closes below prev low
+    isBodyBigEnough &&
+    withinOnePercent; // <= 1%
 
   return {
     isNearEMA,
@@ -519,6 +524,7 @@ function checkLastCandle(candle, ema, prevCandle) {
     isBearishEngulfing,
   };
 }
+
 function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
