@@ -850,6 +850,46 @@ const trackOpenPosition = async () => {
       }
 
       if (trailingActive) {
+        const movePct =
+          side === "buy"
+            ? (price - entryPrice) / entryPrice
+            : (entryPrice - price) / entryPrice;
+
+        if (movePct >= 0.1) {
+          console.warn(
+            "🚨 Hard-exit: +10% move from entry. Closing position now."
+          );
+          try {
+            const openOrders = await binance.fetchOpenOrders(SYMBOL);
+            for (const o of openOrders) {
+              if (o.type === "stop_market" || o.type === "take_profit_market") {
+                await binance.cancelOrder(o.id, SYMBOL);
+                console.log(`🧹 Canceled exit order: ${o.id}`);
+              }
+            }
+          } catch (e) {
+            console.warn("⚠️ Could not cancel exits:", e.message);
+          }
+
+          const exitSide = side === "buy" ? "sell" : "buy";
+          try {
+            await binance.createOrder(
+              SYMBOL,
+              "MARKET",
+              exitSide,
+              posSize,
+              undefined,
+              { reduceOnly: true }
+            );
+            console.log("✅ Hard-exit market close sent.");
+          } catch (e) {
+            console.error("❌ Hard-exit failed:", e.message);
+          }
+
+          updateRisk("win");
+          await cancelAllOpenOrders();
+          return;
+        }
         const timeSinceLastUpdate = Date.now() - lastSLUpdateTime;
         const TRAIL_INTERVAL_MS = 90 * 60 * 1000; // 90 minutes
 
