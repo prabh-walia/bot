@@ -376,7 +376,12 @@ const findTrades = async () => {
             await goToSmallerFrame("bearish");
             console.log("returned from smaller frame");
           }
-
+          console.log(
+            "4h inverted hammer ->",
+            result3.isInvertedHammer,
+            " bearish engykf ->",
+            result3.isBearishEngulfing
+          );
           if (
             result2.isNearEMA &&
             (result3.isInvertedHammer || result3.isBearishEngulfing)
@@ -969,8 +974,17 @@ const placeMarketOrder = async (side, atr) => {
   const tp1Multiplier = 8.5;
 
   const slSide = side === "buy" ? "sell" : "buy";
-  const entryPrice = price;
 
+  let entryPrice = 0;
+  while (!entryPrice || entryPrice <= 0 || isNaN(entryPrice)) {
+    if (!price || price <= 0 || isNaN(price)) {
+      console.warn("⚠️ Invalid entry price (0/NaN). Retrying...");
+      await delay(10); // wait a bit before retry
+    } else {
+      entryPrice = price;
+    }
+  }
+  console.log(" entry ->", entryPrice);
   const stopLossPrice =
     side === "buy"
       ? entryPrice - atr * slMultiplier
