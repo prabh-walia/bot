@@ -161,7 +161,11 @@ const findTrades = async () => {
       console.log("Price fetched:", price);
       if (ordersPending == false) {
         const prioritySymbols = [
-          "suiusdt, enausdt, ethusdt, myxusdt , algousdt ",
+          "suiusdt",
+          "enausdt",
+          "ethusdt",
+          "myxusdt",
+          "algousdt",
         ];
         let selectedSymbol = null;
 
