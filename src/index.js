@@ -160,7 +160,9 @@ const findTrades = async () => {
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
       if (ordersPending == false) {
-        const prioritySymbols = ["suiusdt, enausdt, ethusdt"];
+        const prioritySymbols = [
+          "suiusdt, enausdt, ethusdt, myxusdt , algousdt ",
+        ];
         let selectedSymbol = null;
 
         for (const sym of prioritySymbols) {
@@ -719,7 +721,8 @@ const trackOpenPosition = async () => {
           tightenedSL,
           " pos size",
           posSize,
-          slSide
+          slSide,
+          price
         );
         await binance.createOrder(
           SYMBOL,
@@ -783,13 +786,25 @@ const trackOpenPosition = async () => {
 
       const profitThreshold3 = ATR * 6;
 
-      const newSL = side === "buy" ? price - ATR * 4.5 : price + ATR * 4.5;
+      // ✅ protect price just like placeOrder
+      let safePrice = 0;
+      while (!safePrice || safePrice <= 0 || isNaN(safePrice)) {
+        if (!price || price <= 0 || isNaN(price)) {
+          console.warn("⚠️ Invalid price (0/NaN). Retrying...");
+          await delay(10);
+        } else {
+          safePrice = price;
+        }
+      }
+
+      const newSL =
+        side === "buy" ? safePrice - ATR * 4.5 : safePrice + ATR * 4.5;
 
       if (
         !slTightened3 &&
         unrealizedPnL > 0.1 &&
-        ((side === "buy" && price >= entryPrice + profitThreshold3) ||
-          (side === "sell" && price <= entryPrice - profitThreshold3))
+        ((side === "buy" && safePrice >= entryPrice + profitThreshold3) ||
+          (side === "sell" && safePrice <= entryPrice - profitThreshold3))
       ) {
         console.log(
           "🎯 Price reached profit threshold — tightening SL near entry"
@@ -811,12 +826,10 @@ const trackOpenPosition = async () => {
           slSide,
           posSize,
           undefined,
-          { stopPrice: newSL.toFixed(2), reduceOnly: true }
+          { stopPrice: newSL.toFixed(3), reduceOnly: true }
         );
 
-        console.log("🔒 SL tightened near entry:", newSL.toFixed(2));
-
-        // Optional: deactivate further trailing
+        console.log("🔒 SL tightened near entry:", newSL.toFixed(3));
         slTightened3 = true;
         trailingActive = false;
       }
@@ -834,12 +847,24 @@ const trackOpenPosition = async () => {
           }
         }
 
+        // ✅ protect price
+        let safePrice = 0;
+        while (!safePrice || safePrice <= 0 || isNaN(safePrice)) {
+          if (!price || price <= 0 || isNaN(price)) {
+            console.warn("⚠️ Invalid price (0/NaN). Retrying...");
+            await delay(10);
+          } else {
+            safePrice = price;
+          }
+        }
+
         trailingActive = true;
-        lastSLTriggerPrice = price;
+        lastSLTriggerPrice = safePrice;
         lastSLUpdateTime = Date.now();
         currentSLATRMultiplier = 3.7;
 
-        const initialSL = side === "buy" ? price - ATR * 5 : price + ATR * 5;
+        const initialSL =
+          side === "buy" ? safePrice - ATR * 5 : safePrice + ATR * 5;
         const slSide = side === "buy" ? "sell" : "buy";
 
         await binance.createOrder(
@@ -848,19 +873,28 @@ const trackOpenPosition = async () => {
           slSide,
           posSize,
           undefined,
-          { stopPrice: initialSL.toFixed(2), reduceOnly: true }
+          { stopPrice: initialSL.toFixed(3), reduceOnly: true }
         );
 
-        console.log("🛡️ Initial trailing SL placed at:", initialSL.toFixed(2));
-
+        console.log("🛡️ Initial trailing SL placed at:", initialSL.toFixed(3));
         slUpdated = true;
       }
 
       if (trailingActive) {
+        // protect price
+        let safePrice = 0;
+        while (!safePrice || safePrice <= 0 || isNaN(safePrice)) {
+          if (!price || price <= 0 || isNaN(price)) {
+            await delay(10);
+          } else {
+            safePrice = price;
+          }
+        }
+
         const movePct =
           side === "buy"
-            ? (price - entryPrice) / entryPrice
-            : (entryPrice - price) / entryPrice;
+            ? (safePrice - entryPrice) / entryPrice
+            : (entryPrice - safePrice) / entryPrice;
 
         if (movePct >= 0.08) {
           console.warn(
@@ -904,14 +938,24 @@ const trackOpenPosition = async () => {
         const atrMultiplier = 4;
 
         if (timeSinceLastUpdate >= TRAIL_INTERVAL_MS) {
+          // ✅ protect price (avoid 0/NaN)
+          let safePrice = 0;
+          while (!safePrice || safePrice <= 0 || isNaN(safePrice)) {
+            if (!price || price <= 0 || isNaN(price)) {
+              await delay(10);
+            } else {
+              safePrice = price;
+            }
+          }
+
           if (
-            (side === "buy" && price > lastSLTriggerPrice * 1.015) ||
-            (side === "sell" && price < lastSLTriggerPrice * 0.985)
+            (side === "buy" && safePrice > lastSLTriggerPrice * 1.015) ||
+            (side === "sell" && safePrice < lastSLTriggerPrice * 0.985)
           ) {
-            const newSL =
+            let newSL =
               side === "buy"
-                ? price - ATR * atrMultiplier
-                : price + ATR * atrMultiplier;
+                ? safePrice - ATR * atrMultiplier
+                : safePrice + ATR * atrMultiplier;
 
             const openOrders = await binance.fetchOpenOrders(SYMBOL);
             for (const order of openOrders) {
@@ -927,12 +971,12 @@ const trackOpenPosition = async () => {
               slSide,
               posSize,
               undefined,
-              { stopPrice: newSL.toFixed(2), reduceOnly: true }
+              { stopPrice: newSL.toFixed(3), reduceOnly: true } // use 3 dp for SUI tick
             );
 
-            lastSLTriggerPrice = price;
+            lastSLTriggerPrice = safePrice; // <- update with the guarded price
             lastSLUpdateTime = Date.now();
-            console.log("🔁 Trailing SL moved to:", newSL.toFixed(2));
+            console.log("🔁 Trailing SL moved to:", newSL.toFixed(3));
           } else {
             console.log("⏸ Price not improved — skip SL update");
           }
