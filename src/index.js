@@ -986,6 +986,7 @@ const placeMarketOrder = async (side, atr) => {
     console.log("✅ Market order placed:", totalAmount, side);
 
     // ===== Step 2: SL placement =====
+
     try {
       await binance.createOrder(
         SYMBOL,
@@ -1001,6 +1002,14 @@ const placeMarketOrder = async (side, atr) => {
         "❌ SL placement failed:",
         err.message,
         new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+      );
+      console.warn(
+        "stop price ->",
+        stopLossPrice,
+        "price ",
+        price,
+        "amunt ->",
+        totalAmount
       );
       console.warn(
         "🚨 Closing position immediately!",
@@ -1024,6 +1033,14 @@ const placeMarketOrder = async (side, atr) => {
     } catch (err) {
       console.error("❌ TP1 placement failed:", err.message);
       console.warn("🚨 Closing position immediately!");
+      console.warn(
+        "stop price ->",
+        takeProfitPrice1,
+        "price ",
+        price,
+        "amunt ->",
+        amountTP1
+      );
       await binance.createOrder(SYMBOL, "MARKET", slSide, totalAmount);
       return; // abort
     }
