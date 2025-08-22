@@ -306,6 +306,8 @@ const findTrades = async () => {
             result.isNearEMA,
             " HAMMER ? ",
             result.isBullishHammer,
+            "is engulfing _>,",
+            result.isBullishEngulfing,
             "2h ema close near ? ->",
             result2.isNearEMA
           );
@@ -356,6 +358,9 @@ const findTrades = async () => {
             result.isNearEMA,
             " HAMMER ? ",
             result.isInvertedHammer,
+
+            "is engulfing _>,",
+            result.isBearishEngulfing,
             "2h ema close near ? ->",
             result2.isNearEMA
           );
@@ -380,6 +385,7 @@ const findTrades = async () => {
             // console.log("last candle is beairhs and below EMA");
             // const latestRSI20 = calculateRSI20(closingPrices);
             // if (latestRSI20 > 20) {
+            console.log("tkaing 4h entry");
             await goToSmallerFrame("bearish");
             console.log("returned from smaller frame");
           }
