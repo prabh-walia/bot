@@ -649,10 +649,6 @@ const trackOpenPosition = async () => {
   while (true) {
     await delay(Math.floor(Math.random() * (3100 - 2500 + 1)) + 2400);
     if (!price || price == 0) {
-      console.warn(
-        "⚠️ Invalid price received, skipping this loop. Price:",
-        price
-      );
       continue; // don't run SL tightening with bad data
     }
     try {
@@ -932,7 +928,11 @@ const trackOpenPosition = async () => {
         }
       }
     } catch (err) {
-      console.error("❌ Error in tracking loop:", err.message);
+      console.error(
+        "❌ Error in tracking loop:",
+        err.message,
+        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+      );
     }
   }
 };
@@ -997,8 +997,15 @@ const placeMarketOrder = async (side, atr) => {
       );
       console.log("🛑 SL set at:", stopLossPrice);
     } catch (err) {
-      console.error("❌ SL placement failed:", err.message);
-      console.warn("🚨 Closing position immediately!");
+      console.error(
+        "❌ SL placement failed:",
+        err.message,
+        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+      );
+      console.warn(
+        "🚨 Closing position immediately!",
+        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+      );
       await binance.createOrder(SYMBOL, "MARKET", slSide, totalAmount);
       return; // abort
     }
