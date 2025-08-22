@@ -727,7 +727,7 @@ const trackOpenPosition = async () => {
           slSide,
           posSize,
           undefined,
-          { stopPrice: tightenedSL.toFixed(2) }
+          { stopPrice: tightenedSL.toFixed(2), reduceOnly: true }
         );
 
         console.log("🔒 SL tightened near entry:", tightenedSL.toFixed(2));
@@ -771,7 +771,7 @@ const trackOpenPosition = async () => {
           slSide,
           posSize,
           undefined,
-          { stopPrice: tightenedSL.toFixed(2) }
+          { stopPrice: tightenedSL.toFixed(2), reduceOnly: true }
         );
 
         console.log("🔒 SL tightened near entry:", tightenedSL.toFixed(2));
@@ -811,7 +811,7 @@ const trackOpenPosition = async () => {
           slSide,
           posSize,
           undefined,
-          { stopPrice: newSL.toFixed(2) }
+          { stopPrice: newSL.toFixed(2), reduceOnly: true }
         );
 
         console.log("🔒 SL tightened near entry:", newSL.toFixed(2));
@@ -848,7 +848,7 @@ const trackOpenPosition = async () => {
           slSide,
           posSize,
           undefined,
-          { stopPrice: initialSL.toFixed(2) }
+          { stopPrice: initialSL.toFixed(2), reduceOnly: true }
         );
 
         console.log("🛡️ Initial trailing SL placed at:", initialSL.toFixed(2));
@@ -862,7 +862,7 @@ const trackOpenPosition = async () => {
             ? (price - entryPrice) / entryPrice
             : (entryPrice - price) / entryPrice;
 
-        if (movePct >= 0.1) {
+        if (movePct >= 0.08) {
           console.warn(
             "🚨 Hard-exit: +10% move from entry. Closing position now."
           );
@@ -927,7 +927,7 @@ const trackOpenPosition = async () => {
               slSide,
               posSize,
               undefined,
-              { stopPrice: newSL.toFixed(2) }
+              { stopPrice: newSL.toFixed(2), reduceOnly: true }
             );
 
             lastSLTriggerPrice = price;
