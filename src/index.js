@@ -100,6 +100,21 @@ const isSymbolNear2hEMA = async (symbol) => {
     percentDiff,
   };
 };
+async function isSidewaysATR(atr, price, minPct = 0.007) {
+  let safePrice = 0;
+  while (!safePrice || safePrice <= 0 || isNaN(safePrice)) {
+    if (!price || price <= 0 || isNaN(price)) {
+      console.warn("⚠️ Invalid price (0/NaN) while checking ATR. Retrying...");
+      await delay(10); // small wait before retry
+    } else {
+      safePrice = price;
+    }
+  }
+
+  const atrPct = atr / safePrice;
+  return atrPct < minPct;
+}
+
 function updateRisk(result) {
   if (result === "win") {
     consecutiveLosses = 0;
@@ -578,75 +593,82 @@ const goToSmallerFrame = async (type) => {
     return;
   }
 
-  const lastCandle = ohlcv[ohlcv.length - 2];
-  const open = lastCandle[1];
-  const high = lastCandle[2];
-  const low = lastCandle[3];
-  const close = lastCandle[4];
-  console.log(`📊 Price: ${price} | High: ${high} | Low: ${low}`);
+  if (!(await isSidewaysATR(atr, price))) {
+    const lastCandle = ohlcv[ohlcv.length - 2];
+    const open = lastCandle[1];
+    const high = lastCandle[2];
+    const low = lastCandle[3];
+    const close = lastCandle[4];
+    console.log(`📊 Price: ${price} | High: ${high} | Low: ${low}`);
 
-  const highBreak = high;
-  const lowInvalidation = low * 0.99; // 99
-  const highInvalidation = high * 1.01; // 1.01
+    const highBreak = high;
+    const lowInvalidation = low * 0.99; // 99
+    const highInvalidation = high * 1.01; // 1.01
 
-  console.log(
-    `${type === "bullish" ? "🟢" : "🔴"} Waiting for ${
-      type === "bullish" ? "high breakout" : "low breakdown"
-    } or invalidation`
-  );
-  console.log(" high invalidation  for short->", highInvalidation);
-  console.log(" low invalidation for long ->", lowInvalidation);
-  const poll = async () => {
-    if (ordersPending) return;
+    console.log(
+      `${type === "bullish" ? "🟢" : "🔴"} Waiting for ${
+        type === "bullish" ? "high breakout" : "low breakdown"
+      } or invalidation`
+    );
+    console.log(" high invalidation  for short->", highInvalidation);
+    console.log(" low invalidation for long ->", lowInvalidation);
+    const poll = async () => {
+      if (ordersPending) return;
 
-    if (type === "bullish") {
-      console.log("bullish but price is ->", price);
-      if (price >= highBreak) {
-        console.log("✅ Breakout! Placing market BUY");
-        ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
-        try {
-          await placeMarketOrder("buy", atr);
-          await trackOpenPosition();
-          ordersPending = false;
-          tradeCompletedAt = Date.now();
-        } catch (err) {
-          ordersPending = false; // rollback if failed
-          console.error("❌ Failed to place BUY:", err.message);
+      if (type === "bullish") {
+        console.log("bullish but price is ->", price);
+        if (price >= highBreak) {
+          console.log("✅ Breakout! Placing market BUY");
+          ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
+          try {
+            await placeMarketOrder("buy", atr);
+            await trackOpenPosition();
+            ordersPending = false;
+            tradeCompletedAt = Date.now();
+          } catch (err) {
+            ordersPending = false; // rollback if failed
+            console.error("❌ Failed to place BUY:", err.message);
+          }
+          return;
+        } else if (price <= lowInvalidation) {
+          console.log(
+            "❌ Invalidated (price dropped 0.4% below low). Exiting...",
+            price
+          );
+          return;
         }
-        return;
-      } else if (price <= lowInvalidation) {
-        console.log(
-          "❌ Invalidated (price dropped 0.4% below low). Exiting...",
-          price
-        );
-        return;
-      }
-    } else if (type === "bearish") {
-      console.log("bearish but price is ->", price);
-      if (price <= low) {
-        console.log("✅ Breakdown! Placing market SELL");
-        ordersPending = true;
-        try {
-          await placeMarketOrder("sell", atr);
-          await trackOpenPosition();
-          ordersPending = false;
-          tradeCompletedAt = Date.now();
-        } catch (err) {
-          ordersPending = false;
-          console.error("❌ Failed to place SELL:", err.message);
+      } else if (type === "bearish") {
+        console.log("bearish but price is ->", price);
+        if (price <= low) {
+          console.log("✅ Breakdown! Placing market SELL");
+          ordersPending = true;
+          try {
+            await placeMarketOrder("sell", atr);
+            await trackOpenPosition();
+            ordersPending = false;
+            tradeCompletedAt = Date.now();
+          } catch (err) {
+            ordersPending = false;
+            console.error("❌ Failed to place SELL:", err.message);
+          }
+          return;
+        } else if (price >= highInvalidation) {
+          console.log(
+            "❌ Invalidated (price rose 0.4% above high). Exiting..."
+          );
+          return;
         }
-        return;
-      } else if (price >= highInvalidation) {
-        console.log("❌ Invalidated (price rose 0.4% above high). Exiting...");
-        return;
       }
-    }
 
-    const nextDelay = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
-    setTimeout(poll, nextDelay);
-  };
+      const nextDelay = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+      setTimeout(poll, nextDelay);
+    };
 
-  poll(); // start polling
+    poll(); // start polling
+  } else {
+    console.log("market is sideways ");
+    return;
+  }
 };
 const trackOpenPosition = async () => {
   console.log("📡 Tracking active position...");
