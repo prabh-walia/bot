@@ -65,6 +65,10 @@ let ordersPlaced = [];
 const MIN_NOTIONAL = 5;
 let tradeCompletedAt = 0;
 let initialProfitBooked = false;
+const ENABLE_SR_FILTER = true; // quick kill switch
+const SR_MODE = "enforce"; // "log" | "enforce"
+const SR_LEFT_RIGHT = 3; // swing sensitivity
+const SR_ATR_MULT = 0.45; // zone buffer = 0.35 * 30m ATR
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
@@ -308,6 +312,18 @@ const findTrades = async () => {
         } else {
           isTrueTrend = false;
         }
+
+        const sr = await passSimpleSR(SYMBOL, trend);
+        if (SR_MODE === "log") {
+          console.log(`[SR] ${sr.pass ? "✅" : "❌"} ${sr.reason}`);
+        } else {
+          if (!sr.pass) {
+            console.log(`[SR] ❌ blocked: ${sr.reason}`);
+            continue;
+          }
+          console.log(`[SR] ✅ passed: ${sr.reason}`);
+        }
+
         if (trend === "bullish") {
           const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
           const { avg, close, ema, last2hCandle, prev2hCandle } =
@@ -1144,6 +1160,76 @@ const placeMarketOrder = async (side, atr) => {
     throw err;
   }
 };
+
+// ---- config
+
+// ---- helpers
+function lastSwingHighLow(ohlcv, L = 3, R = 3) {
+  let sh = null,
+    sl = null;
+  for (let i = L; i < ohlcv.length - R; i++) {
+    const hi = ohlcv[i][2],
+      lo = ohlcv[i][3];
+    let isH = true,
+      isL = true;
+    for (let j = i - L; j <= i + R; j++) {
+      if (ohlcv[j][2] > hi) isH = false;
+      if (ohlcv[j][3] < lo) isL = false;
+      if (!isH && !isL) break;
+    }
+    if (isH) sh = { i, price: hi };
+    if (isL) sl = { i, price: lo };
+  }
+  return { sh, sl };
+}
+function atr30m(ohlcv, period = 20) {
+  const tr = [];
+  for (let i = 1; i < ohlcv.length; i++) {
+    const h = ohlcv[i][2],
+      l = ohlcv[i][3],
+      pc = ohlcv[i - 1][4];
+    tr.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+  }
+  let r = tr[0] || 0,
+    a = 1 / period;
+  for (let i = 1; i < tr.length; i++) r = a * tr[i] + (1 - a) * r;
+  return r;
+}
+function inZone(p, center, buf) {
+  return p >= center - buf && p <= center + buf;
+}
+function sweptReject(latest, level, side) {
+  const [, o, h, l, c] = latest;
+  return side === "bearish" ? h > level && c < level : l < level && c > level;
+}
+
+// ---- call this inside findTrades after you compute trend + latest 30m candle
+async function passSimpleSR(symbol, trend) {
+  if (!ENABLE_SR_FILTER) return { pass: true, reason: "disabled" };
+  const o = await binance.fetchOHLCV(symbol, "30m", undefined, 200);
+  if (!o || o.length < 60) return { pass: true, reason: "no data" };
+  const latest = o[o.length - 2];
+  const [, , hi, lo, cl] = latest;
+  const ref = (hi + lo + cl) / 3;
+
+  const a = atr30m(o, 20);
+  const { sh, sl } = lastSwingHighLow(o, SR_LEFT_RIGHT, SR_LEFT_RIGHT);
+  const bufH = a * SR_ATR_MULT;
+  const bufL = a * SR_ATR_MULT;
+
+  if (trend === "bullish") {
+    if (sl && inZone(ref, sl.price, bufL))
+      return { pass: true, reason: "in 30m support" };
+    if (sl && sweptReject(latest, sl.price, "bullish"))
+      return { pass: true, reason: "support sweep" };
+  } else if (trend === "bearish") {
+    if (sh && inZone(ref, sh.price, bufH))
+      return { pass: true, reason: "in 30m resistance" };
+    if (sh && sweptReject(latest, sh.price, "bearish"))
+      return { pass: true, reason: "resistance sweep" };
+  }
+  return { pass: false, reason: "away from 30m S/R" };
+}
 
 const getOrderPrices = async (type, lastCandle) => {
   console.log(" order already there2?", ordersPending);
