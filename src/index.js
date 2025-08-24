@@ -68,7 +68,7 @@ let initialProfitBooked = false;
 const ENABLE_SR_FILTER = true; // quick kill switch
 const SR_MODE = "enforce"; // "log" | "enforce"
 const SR_LEFT_RIGHT = 3; // swing sensitivity
-const SR_ATR_MULT = 1; // zone buffer = 0.35 * 30m ATR
+const SR_ATR_MULT = 0.65; // zone buffer = 0.35 * 30m ATR
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
@@ -356,6 +356,29 @@ const findTrades = async () => {
             await goToSmallerFrame("bullish");
             // }
           }
+          if (!result.isBullishEngulfing) {
+            const [, o, h, l, c] = candle;
+            const [, pO, pH, pL, pC] = prevCandle;
+            console.log("Engulf FAIL ->", {
+              o,
+              h,
+              l,
+              c,
+              pO,
+              pH,
+              pL,
+              pC,
+              reason: {
+                notGreen: !(c > o),
+                bodyTooSmall: !(Math.abs(c - o) >= (h - l) * 0.35),
+                bodyNotEngulfPrevBody: !(
+                  Math.min(o, c) <= Math.min(pO, pC) + 1e-8 &&
+                  Math.max(o, c) >= Math.max(pO, pC) - 1e-8
+                ),
+              },
+            });
+          }
+
           if (
             result2?.isNearEMA &&
             (result3.isBullishHammer || result3.isBullishEngulfing)
@@ -543,6 +566,7 @@ function checkLastCandle(candle, ema, prevCandle) {
     bodySize <= upperWick;
 
   // Bullish Engulfing (with ≤1% body cap)
+
   const isBullishEngulfing =
     close > open && // green
     open < prevClose && // opens below prev close
