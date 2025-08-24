@@ -67,8 +67,8 @@ let tradeCompletedAt = 0;
 let initialProfitBooked = false;
 const ENABLE_SR_FILTER = true; // quick kill switch
 const SR_MODE = "enforce"; // "log" | "enforce"
-const SR_LEFT_RIGHT = 3; // swing sensitivity
-const SR_ATR_MULT = 0.65; // zone buffer = 0.35 * 30m ATR
+const SR_LEFT_RIGHT = 2; // swing sensitivity
+const SR_ATR_MULT = 0.3; // zone buffer = 0.35 * 30m ATR
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
