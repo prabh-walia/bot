@@ -371,7 +371,9 @@ const findTrades = async () => {
           if (
             result.isNearEMA &&
             result2?.isNearEMA &&
-            (result.isBullishHammer || result.isBullishEngulfing)
+            (result.isBullishHammer ||
+              result.isBullishEngulfing ||
+              result.isBullishHarami)
           ) {
             console.log("last candle is bullish hammer and  near ema");
             // const closingPrices = ohlcv.map((candle) => candle[4]);
@@ -380,28 +382,6 @@ const findTrades = async () => {
             // if (latestRSI20 < 84) {
             await goToSmallerFrame("bullish");
             // }
-          }
-          if (!result.isBullishEngulfing) {
-            const [, o, h, l, c] = lastCandle;
-            const [, pO, pH, pL, pC] = prevCandle;
-            console.log("Engulf FAIL ->", {
-              o,
-              h,
-              l,
-              c,
-              pO,
-              pH,
-              pL,
-              pC,
-              reason: {
-                notGreen: !(c > o),
-                bodyTooSmall: !(Math.abs(c - o) >= (h - l) * 0.35),
-                bodyNotEngulfPrevBody: !(
-                  Math.min(o, c) <= Math.min(pO, pC) + 1e-8 &&
-                  Math.max(o, c) >= Math.max(pO, pC) - 1e-8
-                ),
-              },
-            });
           }
 
           if (
@@ -446,7 +426,9 @@ const findTrades = async () => {
           if (
             result.isNearEMA &&
             result2.isNearEMA &&
-            (result.isInvertedHammer || result.isBearishEngulfing)
+            (result.isInvertedHammer ||
+              result.isBearishEngulfing ||
+              result.isBearishHarami)
           ) {
             // const closingPrices = ohlcv.map((candle) => candle[4]);
             // console.log("last candle is beairhs and below EMA");
@@ -565,10 +547,10 @@ function checkLastCandle(candle, ema, prevCandle) {
   const upperWick = high - Math.max(open, close);
 
   // size gates
-  const isBodyBigEnough = body >= range * 0.55; // same as yours
+  const isBodyBigEnough = body >= range * 0.55; // for hammers
   const bodyNotTinyForEngulf = body >= range * 0.35; // relaxed for engulf
 
-  // hammers (unchanged)
+  // hammers
   const isBullishHammer =
     lowerWick > body * 1.1 &&
     upperWick < lowerWick * 0.7 &&
@@ -590,14 +572,34 @@ function checkLastCandle(candle, ema, prevCandle) {
 
   const isGreen = close > open + eps;
   const isRed = open > close + eps;
+  const prevGreen = pClose > pOpen + eps;
+  const prevRed = pOpen > pClose + eps;
 
-  // Body engulfs previous body (no hard “close ≥ prevHigh” requirement)
   const bodyEngulfsPrev =
     bodyLow <= prevBodyLow + eps && bodyHigh >= prevBodyHigh - eps;
 
   const isBullishEngulfing = isGreen && bodyNotTinyForEngulf && bodyEngulfsPrev;
-
   const isBearishEngulfing = isRed && bodyNotTinyForEngulf && bodyEngulfsPrev;
+
+  // ----- HARAMI (inside body) -----
+  // Tunables:
+  const MIN_PREV_BODY_FRAC = 0.25; // require previous body to be at least 25% of its range
+  const MAX_CURR_VS_PREV_BODY = 0.7; // current body <= 70% of previous body (avoid equal-size “inside”)
+  const prevRange = Math.max(1e-9, pHigh - pLow);
+  const prevBody = Math.abs(pClose - pOpen);
+
+  const prevBodyNotTiny = prevBody >= prevRange * MIN_PREV_BODY_FRAC;
+  const currBodySmaller = body <= prevBody * MAX_CURR_VS_PREV_BODY;
+
+  // “Inside” means current body fully within previous body bounds
+  const bodyInsidePrev =
+    bodyLow >= prevBodyLow - eps && bodyHigh <= prevBodyHigh + eps;
+
+  const isBullishHarami =
+    prevRed && isGreen && prevBodyNotTiny && currBodySmaller && bodyInsidePrev;
+
+  const isBearishHarami =
+    prevGreen && isRed && prevBodyNotTiny && currBodySmaller && bodyInsidePrev;
 
   // ---- reasons for debugging (optional) ----
   const reasons = {
@@ -618,6 +620,17 @@ function checkLastCandle(candle, ema, prevCandle) {
       prevBodyLow,
       prevBodyHigh,
     },
+    harami: {
+      prevGreen,
+      prevRed,
+      prevBody,
+      prevRange,
+      prevBodyNotTiny,
+      currBodySmaller,
+      bodyInsidePrev,
+      MIN_PREV_BODY_FRAC,
+      MAX_CURR_VS_PREV_BODY,
+    },
   };
 
   return {
@@ -626,7 +639,9 @@ function checkLastCandle(candle, ema, prevCandle) {
     isInvertedHammer,
     isBullishEngulfing,
     isBearishEngulfing,
-    reasons, // handy to log when something “looks” like an engulf but fails a gate
+    isBullishHarami,
+    isBearishHarami,
+    reasons,
   };
 }
 
@@ -672,7 +687,7 @@ const goToSmallerFrame = async (type) => {
     atr, // from your timeframe (e.g., 30m ATR)
     price: safePrice, // your live price
     minPct: 0.0065,
-    maxHours: 6, // "only block trades for the first 3–4 hours"
+    maxHours: 4, // "only block trades for the first 3–4 hours"
   });
   if (sideways) {
     console.log("market is sideways ");
