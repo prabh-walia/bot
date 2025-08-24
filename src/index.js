@@ -69,6 +69,7 @@ const ENABLE_SR_FILTER = true; // quick kill switch
 const SR_MODE = "enforce"; // "log" | "enforce"
 const SR_LEFT_RIGHT = 2; // swing sensitivity
 const SR_ATR_MULT = 0.3; // zone buffer = 0.35 * 30m ATR
+const SIDEWAYS_STATE = new Map();
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
@@ -104,20 +105,49 @@ const isSymbolNear2hEMA = async (symbol) => {
     percentDiff,
   };
 };
-async function isSidewaysATR(atr, price, minPct = 0.0065) {
+async function isSidewaysATRWithCap({
+  symbol,
+  atr, // numeric ATR for your working timeframe
+  price, // latest price
+  minPct = 0.0065, // 0.65% threshold (tune)
+  maxHours = 4, // cap: treat as sideways only for first 3–4h
+  overshoot = 2.1, // your existing factor
+  delayFn = (ms) => new Promise((r) => setTimeout(r, ms)), // inject if you want
+  nowTs = Date.now(),
+}) {
+  // guard price (your original pattern)
   let safePrice = 0;
-  while (!safePrice || safePrice <= 0 || isNaN(safePrice)) {
-    if (!price || price <= 0 || isNaN(price)) {
+  while (!safePrice || safePrice <= 0 || Number.isNaN(safePrice)) {
+    if (!price || price <= 0 || Number.isNaN(price)) {
       console.warn("⚠️ Invalid price (0/NaN) while checking ATR. Retrying...");
-      await delay(10); // small wait before retry
+      await delayFn(10);
     } else {
       safePrice = price;
     }
   }
 
-  const atrPct = (atr * 2.1) / safePrice;
-  console.log("atr pct ->", atrPct);
-  return atrPct < minPct;
+  // compute ATR% of price (with your overshoot factor)
+  const atrPct = (atr * overshoot) / safePrice;
+
+  // pull state
+  const st = SIDEWAYS_STATE.get(symbol) || { active: false, since: 0 };
+
+  if (atrPct < minPct) {
+    // entering or continuing sideways
+    if (!st.active) {
+      st.active = true;
+      st.since = nowTs;
+      SIDEWAYS_STATE.set(symbol, st);
+    }
+    const hours = (nowTs - st.since) / 36e5; // ms -> hours
+    const stillWithinCap = hours <= maxHours;
+    // true only for the first `maxHours` hours of the sideways regime
+    return stillWithinCap;
+  } else {
+    // regime ended → reset
+    if (st.active) SIDEWAYS_STATE.delete(symbol);
+    return false;
+  }
 }
 
 function updateRisk(result) {
@@ -641,8 +671,17 @@ const goToSmallerFrame = async (type) => {
     console.error("No OHLCV data available");
     return;
   }
-
-  if (!(await isSidewaysATR(atr, price))) {
+  const sideways = await isSidewaysATRWithCap({
+    symbol: SYMBOL,
+    atr, // from your timeframe (e.g., 30m ATR)
+    price, // your live price
+    minPct: 0.0065,
+    maxHours: 6, // "only block trades for the first 3–4 hours"
+  });
+  if (sideways) {
+    console.log("market is sideways ");
+    return;
+  } else {
     const lastCandle = ohlcv[ohlcv.length - 2];
     const open = lastCandle[1];
     const high = lastCandle[2];
@@ -714,9 +753,6 @@ const goToSmallerFrame = async (type) => {
     };
 
     poll(); // start polling
-  } else {
-    console.log("market is sideways ");
-    return;
   }
 };
 const trackOpenPosition = async () => {
