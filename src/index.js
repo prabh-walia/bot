@@ -1205,30 +1205,46 @@ function sweptReject(latest, level, side) {
 
 // ---- call this inside findTrades after you compute trend + latest 30m candle
 async function passSimpleSR(symbol, trend) {
-  if (!ENABLE_SR_FILTER) return { pass: true, reason: "disabled" };
+  if (!ENABLE_SR_FILTER) return { pass: true, reason: "disabled", level: null };
+
   const o = await binance.fetchOHLCV(symbol, "30m", undefined, 200);
-  if (!o || o.length < 60) return { pass: true, reason: "no data" };
-  const latest = o[o.length - 2];
+  if (!o || o.length < 60)
+    return { pass: false, reason: "no data", level: null };
+
+  const latest = o[o.length - 2]; // last closed
   const [, , hi, lo, cl] = latest;
-  const ref = (hi + lo + cl) / 3;
+  const ref = cl;
 
-  const a = atr30m(o, 20);
-  const { sh, sl } = lastSwingHighLow(o, SR_LEFT_RIGHT, SR_LEFT_RIGHT);
-  const bufH = a * SR_ATR_MULT;
-  const bufL = a * SR_ATR_MULT;
+  const a = atr30m(o.slice(0, o.length - 1), 20);
+  const { sh, sl } = lastSwingHighLow(
+    o.slice(0, o.length - 1),
+    SR_LEFT_RIGHT,
+    SR_LEFT_RIGHT
+  );
+  const buf = a * SR_ATR_MULT;
+  console.log("buffer", buf);
 
-  if (trend === "bullish") {
-    if (sl && inZone(ref, sl.price, bufL))
-      return { pass: true, reason: "in 30m support" };
-    if (sl && sweptReject(latest, sl.price, "bullish"))
-      return { pass: true, reason: "support sweep" };
-  } else if (trend === "bearish") {
-    if (sh && inZone(ref, sh.price, bufH))
-      return { pass: true, reason: "in 30m resistance" };
-    if (sh && sweptReject(latest, sh.price, "bearish"))
-      return { pass: true, reason: "resistance sweep" };
+  if (trend === "bullish" && sl) {
+    if (inZone(ref, sl.price, buf)) {
+      console.log(`[${symbol}] Support @ ${sl.price}`);
+      return { pass: true, reason: "in 30m support", level: sl.price };
+    }
+    if (sweptReject(latest, sl.price, "bullish")) {
+      console.log(`[${symbol}] Support sweep @ ${sl.price}`);
+      return { pass: true, reason: "support sweep", level: sl.price };
+    }
+  } else if (trend === "bearish" && sh) {
+    if (inZone(ref, sh.price, buf)) {
+      console.log(`[${symbol}] Resistance @ ${sh.price}`);
+      return { pass: true, reason: "in 30m resistance", level: sh.price };
+    }
+    if (sweptReject(latest, sh.price, "bearish")) {
+      console.log(`[${symbol}] Resistance sweep @ ${sh.price}`);
+      return { pass: true, reason: "resistance sweep", level: sh.price };
+    }
   }
-  return { pass: false, reason: "away from 30m S/R" };
+
+  return { pass: false, reason: "away from 30m S/R", level: null };
 }
 
 const getOrderPrices = async (type, lastCandle) => {
