@@ -357,7 +357,7 @@ const findTrades = async () => {
             // }
           }
           if (!result.isBullishEngulfing) {
-            const [, o, h, l, c] = candle;
+            const [, o, h, l, c] = lastCandle;
             const [, pO, pH, pL, pC] = prevCandle;
             console.log("Engulf FAIL ->", {
               o,
