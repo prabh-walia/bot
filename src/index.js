@@ -527,60 +527,73 @@ const main = async () => {
 main();
 
 function checkLastCandle(candle, ema, prevCandle) {
-  const open = candle[1];
-  const high = candle[2];
-  const low = candle[3];
-  const close = candle[4];
-  const vol = candle[5];
+  const [, open, high, low, close] = candle;
+  const [, pOpen, pHigh, pLow, pClose] = prevCandle;
 
-  const prevOpen = prevCandle[1];
-  const prevHigh = prevCandle[2];
-  const prevLow = prevCandle[3];
-  const prevClose = prevCandle[4];
+  // --- EMA proximity ---
+  const isNearEMA = Math.abs(close - ema) <= ema * 0.014; // ~1.4%
 
-  const emaProximityRange = ema * 0.014; // ~1.4%
-  const isNearEMA = Math.abs(close - ema) <= emaProximityRange;
-
-  const candleRange = high - low;
-  const minBodySizePercent = 0.55; // 55% of total range
-  const bodySize = Math.abs(close - open);
+  // --- Ranges, bodies, wicks ---
+  const range = Math.max(1e-9, high - low);
+  const body = Math.abs(close - open);
   const lowerWick = Math.min(open, close) - low;
   const upperWick = high - Math.max(open, close);
 
-  // 1% cap for engulfing (body % of open)
-  const bodyPct = open ? bodySize / open : 0;
-  const withinOnePercent = bodyPct <= 0.01; // <= 1%
+  // size gates
+  const isBodyBigEnough = body >= range * 0.55; // same as yours
+  const bodyNotTinyForEngulf = body >= range * 0.35; // relaxed for engulf
 
-  const isBodyBigEnough = bodySize >= candleRange * minBodySizePercent;
-
+  // hammers (unchanged)
   const isBullishHammer =
-    lowerWick > bodySize * 1.1 &&
+    lowerWick > body * 1.1 &&
     upperWick < lowerWick * 0.7 &&
-    bodySize > 0 &&
-    bodySize <= lowerWick;
+    body > 0 &&
+    body <= lowerWick;
 
   const isInvertedHammer =
-    upperWick > bodySize * 1.1 &&
+    upperWick > body * 1.1 &&
     lowerWick < upperWick * 0.7 &&
-    bodySize > 0 &&
-    bodySize <= upperWick;
+    body > 0 &&
+    body <= upperWick;
 
-  // Bullish Engulfing (with ≤1% body cap)
+  // ----- BODY-TO-BODY ENGULFING -----
+  const bodyLow = Math.min(open, close);
+  const bodyHigh = Math.max(open, close);
+  const prevBodyLow = Math.min(pOpen, pClose);
+  const prevBodyHigh = Math.max(pOpen, pClose);
+  const eps = 1e-8;
 
-  const isBullishEngulfing =
-    close > open && // green
-    open < prevClose && // opens below prev close
-    close >= prevHigh && // closes above prev high
-    isBodyBigEnough &&
-    withinOnePercent; // <= 1%
+  const isGreen = close > open + eps;
+  const isRed = open > close + eps;
 
-  // Bearish Engulfing (with ≤1% body cap)
-  const isBearishEngulfing =
-    close < open && // red
-    open > prevClose && // opens above prev close
-    close <= prevLow && // closes below prev low
-    isBodyBigEnough &&
-    withinOnePercent; // <= 1%
+  // Body engulfs previous body (no hard “close ≥ prevHigh” requirement)
+  const bodyEngulfsPrev =
+    bodyLow <= prevBodyLow + eps && bodyHigh >= prevBodyHigh - eps;
+
+  const isBullishEngulfing = isGreen && bodyNotTinyForEngulf && bodyEngulfsPrev;
+
+  const isBearishEngulfing = isRed && bodyNotTinyForEngulf && bodyEngulfsPrev;
+
+  // ---- reasons for debugging (optional) ----
+  const reasons = {
+    isNearEMA,
+    hammer: {
+      bullishHammer: isBullishHammer,
+      invertedHammer: isInvertedHammer,
+    },
+    engulf: {
+      isGreen,
+      isRed,
+      body,
+      range,
+      bodyNotTinyForEngulf,
+      bodyEngulfsPrev,
+      bodyLow,
+      bodyHigh,
+      prevBodyLow,
+      prevBodyHigh,
+    },
+  };
 
   return {
     isNearEMA,
@@ -588,6 +601,7 @@ function checkLastCandle(candle, ema, prevCandle) {
     isInvertedHammer,
     isBullishEngulfing,
     isBearishEngulfing,
+    reasons, // handy to log when something “looks” like an engulf but fails a gate
   };
 }
 
