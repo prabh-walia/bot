@@ -1273,7 +1273,7 @@ async function passSimpleSR(
   const buf = a * bufMult;
   console.log("buff34 ->", buf);
   const band = (level) => ({ lo: level - buf, hi: level + buf });
-
+  console.log(" resistance ->", sh, " support ->", sl);
   // Helper: strict-ish sweep (overshoot + close back inside)
   function sweptRejectStrict(candle, level, side) {
     const [, o, h, l, c] = candle;
