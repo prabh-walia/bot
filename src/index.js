@@ -1261,7 +1261,7 @@ async function passSimpleSR(
     return { pass: false, reason: "no data", level: null, barsAgo: null };
 
   // Work only with CLOSED bars; ignore the very latest building bar
-  const closed = o.slice(0, -1);
+  const closed = o;
   const latest = closed[closed.length - 1];
   const a = atr30m(closed, atrLen);
 
