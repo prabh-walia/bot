@@ -104,7 +104,7 @@ const isSymbolNear2hEMA = async (symbol) => {
     percentDiff,
   };
 };
-async function isSidewaysATR(atr, price, minPct = 0.007) {
+async function isSidewaysATR(atr, price, minPct = 0.008) {
   let safePrice = 0;
   while (!safePrice || safePrice <= 0 || isNaN(safePrice)) {
     if (!price || price <= 0 || isNaN(price)) {
