@@ -1242,48 +1242,130 @@ function sweptReject(latest, level, side) {
 }
 
 // ---- call this inside findTrades after you compute trend + latest 30m candle
-async function passSimpleSR(symbol, trend) {
-  if (!ENABLE_SR_FILTER) return { pass: true, reason: "disabled", level: null };
+async function passSimpleSR(
+  symbol,
+  trend,
+  {
+    atrLen = 20,
+    leftRight = SR_LEFT_RIGHT,
+    bufMult = SR_ATR_MULT,
+    LOOKBACK_BARS = 3, // how many closed 30m bars to look back
+    SWEEP_OVERSHOOT_FRAC = 0.25, // how deep beyond level counts as a sweep
+  } = {}
+) {
+  if (!ENABLE_SR_FILTER)
+    return { pass: true, reason: "disabled", level: null, barsAgo: null };
 
-  const o = await binance.fetchOHLCV(symbol, "30m", undefined, 200);
+  const o = await binance.fetchOHLCV(symbol, "4h", undefined, 220);
   if (!o || o.length < 60)
-    return { pass: false, reason: "no data", level: null };
+    return { pass: false, reason: "no data", level: null, barsAgo: null };
 
-  const latest = o[o.length - 2]; // last closed
-  const [, , hi, lo, cl] = latest;
-  const ref = cl;
+  // Work only with CLOSED bars; ignore the very latest building bar
+  const closed = o.slice(0, -1);
+  const latest = closed[closed.length - 1];
+  const a = atr30m(closed, atrLen);
 
-  const a = atr30m(o.slice(0, o.length - 1), 20);
-  const { sh, sl } = lastSwingHighLow(
-    o.slice(0, o.length - 1),
-    SR_LEFT_RIGHT,
-    SR_LEFT_RIGHT
-  );
-  const buf = a * SR_ATR_MULT;
-  console.log("resistance -", sh, "support ->", sl);
-  console.log("buffer", buf);
+  // Swings computed on closed data only
+  const { sh, sl } = lastSwingHighLow(closed, leftRight, leftRight);
+  if (!sh && !sl)
+    return { pass: false, reason: "no swings", level: null, barsAgo: null };
 
-  if (trend === "bullish" && sl) {
-    if (inZone(ref, sl.price, buf)) {
-      console.log(`[${symbol}] Support @ ${sl.price}`);
-      return { pass: true, reason: "in 30m support", level: sl.price };
-    }
-    if (sweptReject(latest, sl.price, "bullish")) {
-      console.log(`[${symbol}] Support sweep @ ${sl.price}`);
-      return { pass: true, reason: "support sweep", level: sl.price };
-    }
-  } else if (trend === "bearish" && sh) {
-    if (inZone(ref, sh.price, buf)) {
-      console.log(`[${symbol}] Resistance @ ${sh.price}`);
-      return { pass: true, reason: "in 30m resistance", level: sh.price };
-    }
-    if (sweptReject(latest, sh.price, "bearish")) {
-      console.log(`[${symbol}] Resistance sweep @ ${sh.price}`);
-      return { pass: true, reason: "resistance sweep", level: sh.price };
+  const buf = a * bufMult;
+  const band = (level) => ({ lo: level - buf, hi: level + buf });
+
+  // Helper: strict-ish sweep (overshoot + close back inside)
+  function sweptRejectStrict(candle, level, side) {
+    const [, o, h, l, c] = candle;
+    const { lo, hi } = band(level);
+    if (side === "bearish") {
+      // push above band by some fraction, then close back below band
+      const overshoot =
+        h > hi * (1 + SWEEP_OVERSHOOT_FRAC * (buf / Math.max(1e-9, level)));
+      return overshoot && c < hi;
+    } else {
+      // push below band by some fraction, then close back above band
+      const overshoot =
+        l < lo * (1 - SWEEP_OVERSHOOT_FRAC * (buf / Math.max(1e-9, level)));
+      return overshoot && c > lo;
     }
   }
 
-  return { pass: false, reason: "away from 30m S/R", level: null };
+  // Scan back LOOKBACK_BARS closed candles (including the last closed)
+  const start = Math.max(0, closed.length - LOOKBACK_BARS);
+  for (let idx = closed.length - 1; idx >= start; idx--) {
+    const bar = closed[idx];
+    const barsAgo = closed.length - 1 - idx;
+    const [, , hi, lo, cl] = bar;
+
+    if (trend === "bullish" && sl) {
+      const { lo: bandLo, hi: bandHi } = band(sl.price);
+      const inSupport = cl >= bandLo && cl <= bandHi;
+      const swept =
+        sweptRejectStrict(bar, sl.price, "bullish") ||
+        sweptReject(bar, sl.price, "bullish");
+
+      if (inSupport) {
+        console.log(
+          `[${symbol}] ✅ SR pass — in 30m support @ ${sl.price} (barsAgo=${barsAgo})`
+        );
+        return {
+          pass: true,
+          reason: "in 30m support",
+          level: sl.price,
+          barsAgo,
+        };
+      }
+      if (swept) {
+        console.log(
+          `[${symbol}] ✅ SR pass — support sweep @ ${sl.price} (barsAgo=${barsAgo})`
+        );
+        return {
+          pass: true,
+          reason: "support sweep",
+          level: sl.price,
+          barsAgo,
+        };
+      }
+    }
+
+    if (trend === "bearish" && sh) {
+      const { lo: bandLo, hi: bandHi } = band(sh.price);
+      const inResistance = cl >= bandLo && cl <= bandHi;
+      const swept =
+        sweptRejectStrict(bar, sh.price, "bearish") ||
+        sweptReject(bar, sh.price, "bearish");
+
+      if (inResistance) {
+        console.log(
+          `[${symbol}] ✅ SR pass — in 30m resistance @ ${sh.price} (barsAgo=${barsAgo})`
+        );
+        return {
+          pass: true,
+          reason: "in 30m resistance",
+          level: sh.price,
+          barsAgo,
+        };
+      }
+      if (swept) {
+        console.log(
+          `[${symbol}] ✅ SR pass — resistance sweep @ ${sh.price} (barsAgo=${barsAgo})`
+        );
+        return {
+          pass: true,
+          reason: "resistance sweep",
+          level: sh.price,
+          barsAgo,
+        };
+      }
+    }
+  }
+
+  return {
+    pass: false,
+    reason: "no recent SR touch/sweep",
+    level: null,
+    barsAgo: null,
+  };
 }
 
 const getOrderPrices = async (type, lastCandle) => {
