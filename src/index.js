@@ -117,18 +117,12 @@ async function isSidewaysATRWithCap({
 }) {
   // guard price (your original pattern)
   let safePrice = 0;
-  while (!safePrice || safePrice <= 0 || Number.isNaN(safePrice)) {
-    if (!price || price <= 0 || Number.isNaN(price)) {
-      console.warn("⚠️ Invalid price (0/NaN) while checking ATR. Retrying...");
-      await delayFn(10);
-    } else {
-      safePrice = price;
-    }
-  }
+
+  safePrice = price;
 
   // compute ATR% of price (with your overshoot factor)
   const atrPct = (atr * overshoot) / safePrice;
-
+  console.log("atr pct ->", atrPct);
   // pull state
   const st = SIDEWAYS_STATE.get(symbol) || { active: false, since: 0 };
 
@@ -671,10 +665,12 @@ const goToSmallerFrame = async (type) => {
     console.error("No OHLCV data available");
     return;
   }
+
+  const safePrice = await getSafePrice(SYMBOL);
   const sideways = await isSidewaysATRWithCap({
     symbol: SYMBOL,
     atr, // from your timeframe (e.g., 30m ATR)
-    price, // your live price
+    price: safePrice, // your live price
     minPct: 0.0065,
     maxHours: 6, // "only block trades for the first 3–4 hours"
   });
@@ -1404,6 +1400,19 @@ async function passSimpleSR(
     level: null,
     barsAgo: null,
   };
+}
+async function getSafePrice(symbol) {
+  let safePrice = 0;
+  while (!safePrice || safePrice <= 0 || Number.isNaN(safePrice)) {
+    const p = price; // or await getRealTimePrice(symbol) if you fetch fresh
+    if (!p || p <= 0 || Number.isNaN(p)) {
+      console.warn("⚠️ Invalid price (0/NaN). Retrying fetch...");
+      await delay(50); // wait a little before retry
+    } else {
+      safePrice = p;
+    }
+  }
+  return safePrice;
 }
 
 const getOrderPrices = async (type, lastCandle) => {
