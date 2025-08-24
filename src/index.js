@@ -1222,6 +1222,7 @@ async function passSimpleSR(symbol, trend) {
     SR_LEFT_RIGHT
   );
   const buf = a * SR_ATR_MULT;
+  console.log("resistance -", sh, "support ->", sl);
   console.log("buffer", buf);
 
   if (trend === "bullish" && sl) {
