@@ -1271,6 +1271,7 @@ async function passSimpleSR(
     return { pass: false, reason: "no swings", level: null, barsAgo: null };
 
   const buf = a * bufMult;
+  console.log("buff34 ->", buf);
   const band = (level) => ({ lo: level - buf, hi: level + buf });
 
   // Helper: strict-ish sweep (overshoot + close back inside)
