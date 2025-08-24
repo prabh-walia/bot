@@ -115,7 +115,7 @@ async function isSidewaysATR(atr, price, minPct = 0.007) {
     }
   }
 
-  const atrPct = atr / safePrice;
+  const atrPct = (atr * 2.1) / safePrice;
   return atrPct < minPct;
 }
 
