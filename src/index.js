@@ -384,14 +384,14 @@ const findTrades = async () => {
             // }
           }
 
-          if (
-            result2?.isNearEMA &&
-            (result3.isBullishHammer || result3.isBullishEngulfing)
-          ) {
-            console.log("last candle (2h) is bullish hammer and  near ema");
+          // if (
+          //   result2?.isNearEMA &&
+          //   (result3.isBullishHammer || result3.isBullishEngulfing)
+          // ) {
+          //   console.log("last candle (2h) is bullish hammer and  near ema");
 
-            await goToSmallerFrame("bullish");
-          }
+          //   await goToSmallerFrame("bullish");
+          // }
           // let { stopLossPrice, ratio, patternType } =
           //   determineBullishTradeParameters(
           //     lastCandle,
@@ -443,18 +443,18 @@ const findTrades = async () => {
             " bearish engykf ->",
             result3.isBearishEngulfing
           );
-          if (
-            result2.isNearEMA &&
-            (result3.isInvertedHammer || result3.isBearishEngulfing)
-          ) {
-            // const closingPrices = ohlcv.map((candle) => candle[4]);
-            // console.log("last candle is beairhs and below EMA");
-            // const latestRSI20 = calculateRSI20(closingPrices);
-            // if (latestRSI20 > 20) {
-            console.log("tkaing 4h entry");
-            await goToSmallerFrame("bearish");
-            console.log("returned from smaller frame");
-          }
+          // if (
+          //   result2.isNearEMA &&
+          //   (result3.isInvertedHammer || result3.isBearishEngulfing)
+          // ) {
+          //   // const closingPrices = ohlcv.map((candle) => candle[4]);
+          //   // console.log("last candle is beairhs and below EMA");
+          //   // const latestRSI20 = calculateRSI20(closingPrices);
+          //   // if (latestRSI20 > 20) {
+          //   console.log("tkaing 4h entry");
+          //   await goToSmallerFrame("bearish");
+          //   console.log("returned from smaller frame");
+          // }
         }
 
         // let { stopLossPrice, ratio, patternType } =
