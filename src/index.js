@@ -681,7 +681,7 @@ const goToSmallerFrame = async (type) => {
     return;
   }
 
-  const safePrice = await getSafePrice(SYMBOL);
+  const safePrice = await getSafePrice();
   const sideways = await isSidewaysATRWithCap({
     symbol: SYMBOL,
     atr, // from your timeframe (e.g., 30m ATR)
@@ -714,9 +714,10 @@ const goToSmallerFrame = async (type) => {
     const poll = async () => {
       if (ordersPending) return;
 
+      const safePrice = await getSafePrice();
       if (type === "bullish") {
-        console.log("bullish but price is ->", price);
-        if (price >= highBreak) {
+        console.log("bullish but price is ->", safePrice);
+        if (safePrice >= highBreak) {
           console.log("✅ Breakout! Placing market BUY");
           ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
           try {
@@ -729,16 +730,16 @@ const goToSmallerFrame = async (type) => {
             console.error("❌ Failed to place BUY:", err.message);
           }
           return;
-        } else if (price <= lowInvalidation) {
+        } else if (safePrice <= lowInvalidation) {
           console.log(
             "❌ Invalidated (price dropped 0.4% below low). Exiting...",
-            price
+            safePrice
           );
           return;
         }
       } else if (type === "bearish") {
-        console.log("bearish but price is ->", price);
-        if (price <= low) {
+        console.log("bearish but price is ->", safePrice);
+        if (safePrice <= low) {
           console.log("✅ Breakdown! Placing market SELL");
           ordersPending = true;
           try {
@@ -751,7 +752,7 @@ const goToSmallerFrame = async (type) => {
             console.error("❌ Failed to place SELL:", err.message);
           }
           return;
-        } else if (price >= highInvalidation) {
+        } else if (safePrice >= highInvalidation) {
           console.log(
             "❌ Invalidated (price rose 0.4% above high). Exiting..."
           );
@@ -1416,7 +1417,7 @@ async function passSimpleSR(
     barsAgo: null,
   };
 }
-async function getSafePrice(symbol) {
+async function getSafePrice() {
   let safePrice = 0;
   while (!safePrice || safePrice <= 0 || Number.isNaN(safePrice)) {
     const p = price; // or await getRealTimePrice(symbol) if you fetch fresh
