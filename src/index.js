@@ -95,7 +95,7 @@ const isSymbolNear2hEMA = async (symbol) => {
   );
   console.log("current close ->", currentCandle[4]);
   const percentDiff = (Math.abs(currentCandle[4] - ema) / ema) * 100;
-  const proximityThreshold = 2.5; // percent
+  const proximityThreshold = 3; // percent
 
   return {
     isNear: percentDiff <= proximityThreshold,
@@ -1055,7 +1055,7 @@ const trackOpenPosition = async () => {
           return;
         }
         const timeSinceLastUpdate = Date.now() - lastSLUpdateTime;
-        const TRAIL_INTERVAL_MS = 90 * 60 * 1000; // 90 minutes
+        const TRAIL_INTERVAL_MS = 60 * 60 * 1000; // 90 minutes
 
         const slSide = side === "buy" ? "sell" : "buy";
         const atrMultiplier = 4;
@@ -1311,7 +1311,7 @@ async function passSimpleSR(
 
   // Work only with CLOSED bars; ignore the very latest building bar
   const closed = o;
-  const latest = closed[closed.length - 1];
+  const latest = closed[closed.length - 2];
   const a = atr30m(closed, atrLen);
 
   // Swings computed on closed data only
