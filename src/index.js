@@ -784,9 +784,7 @@ const trackOpenPosition = async () => {
 
   while (true) {
     await delay(Math.floor(Math.random() * (3100 - 2500 + 1)) + 2400);
-    if (!price || price == 0) {
-      continue; // don't run SL tightening with bad data
-    }
+    const safePrice = await getSafePrice();
     try {
       const position = await getActivePosition();
       if (!position || parseFloat(position.info.positionAmt) === 0) {
@@ -804,7 +802,7 @@ const trackOpenPosition = async () => {
       const unrealizedPnL = parseFloat(position.info.unRealizedProfit);
       lastUnrealizedPnL = unrealizedPnL;
       console.log(
-        `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${price} | PnL: ${unrealizedPnL}`
+        `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${safePrice} | PnL: ${unrealizedPnL}`
       );
 
       const profitThreshold = ATR * 1.5;
@@ -813,14 +811,14 @@ const trackOpenPosition = async () => {
       if (
         !slTightened &&
         unrealizedPnL > 0.1 &&
-        price !== 0 &&
-        ((side === "buy" && price >= entryPrice + profitThreshold) ||
-          (side === "sell" && price <= entryPrice - profitThreshold))
+        safePrice !== 0 &&
+        ((side === "buy" && safePrice >= entryPrice + profitThreshold) ||
+          (side === "sell" && safePrice <= entryPrice - profitThreshold))
       ) {
         console.warn(
           "🎯 Price reached profit threshold — tightening SL near entry",
           entryPrice,
-          price,
+          safePrice,
           profitThreshold,
           side
         );
@@ -845,7 +843,7 @@ const trackOpenPosition = async () => {
           " pos size",
           posSize,
           slSide,
-          price
+          getSafePrice
         );
         await binance.createOrder(
           SYMBOL,
@@ -869,9 +867,9 @@ const trackOpenPosition = async () => {
       if (
         !slTightened2 &&
         unrealizedPnL > 0.1 &&
-        price !== 0 &&
-        ((side === "buy" && price >= entryPrice + profitThreshold2) ||
-          (side === "sell" && price <= entryPrice - profitThreshold2))
+        safePrice !== 0 &&
+        ((side === "buy" && safePrice >= entryPrice + profitThreshold2) ||
+          (side === "sell" && safePrice <= entryPrice - profitThreshold2))
       ) {
         console.log(
           "🎯 Price reached profit threshold — tightening SL near entry"
@@ -910,15 +908,6 @@ const trackOpenPosition = async () => {
       const profitThreshold3 = ATR * 6;
 
       // ✅ protect price just like placeOrder
-      let safePrice = 0;
-      while (!safePrice || safePrice <= 0 || isNaN(safePrice)) {
-        if (!price || price <= 0 || isNaN(price)) {
-          console.warn("⚠️ Invalid price (0/NaN). Retrying...");
-          await delay(10);
-        } else {
-          safePrice = price;
-        }
-      }
 
       const newSL =
         side === "buy" ? safePrice - ATR * 4.5 : safePrice + ATR * 4.5;
@@ -967,17 +956,6 @@ const trackOpenPosition = async () => {
           if (order.type === "stop_market") {
             await binance.cancelOrder(order.id, SYMBOL);
             console.log(`🧹 SL canceled: ${order.id}`);
-          }
-        }
-
-        // ✅ protect price
-        let safePrice = 0;
-        while (!safePrice || safePrice <= 0 || isNaN(safePrice)) {
-          if (!price || price <= 0 || isNaN(price)) {
-            console.warn("⚠️ Invalid price (0/NaN). Retrying...");
-            await delay(10);
-          } else {
-            safePrice = price;
           }
         }
 
@@ -1109,6 +1087,7 @@ const trackOpenPosition = async () => {
       console.error(
         "❌ Error in tracking loop:",
         err.message,
+        price,
         new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
       );
     }
