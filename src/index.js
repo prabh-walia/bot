@@ -1305,7 +1305,7 @@ async function passSimpleSR(
   if (!ENABLE_SR_FILTER)
     return { pass: true, reason: "disabled", level: null, barsAgo: null };
 
-  const o = await binance.fetchOHLCV(symbol, "4h", undefined, 220);
+  const o = await binance.fetchOHLCV(symbol, "2h", undefined, 220);
   if (!o || o.length < 60)
     return { pass: false, reason: "no data", level: null, barsAgo: null };
 
