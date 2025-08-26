@@ -1121,15 +1121,9 @@ const placeMarketOrder = async (side, atr) => {
 
   const slSide = side === "buy" ? "sell" : "buy";
 
-  let entryPrice = 0;
-  while (!entryPrice || entryPrice <= 0 || isNaN(entryPrice)) {
-    if (!price || price <= 0 || isNaN(price)) {
-      console.warn("⚠️ Invalid entry price (0/NaN). Retrying...");
-      await delay(10); // wait a bit before retry
-    } else {
-      entryPrice = price;
-    }
-  }
+  const safePrice = await getSafePrice();
+  let entryPrice = safePrice;
+
   console.log(" entry ->", entryPrice);
   const stopLossPrice =
     side === "buy"
