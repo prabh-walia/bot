@@ -371,9 +371,7 @@ const findTrades = async () => {
           if (
             result.isNearEMA &&
             result2?.isNearEMA &&
-            (result.isBullishHammer ||
-              result.isBullishEngulfing ||
-              result.isBullishHarami)
+            (result.isBullishHammer || result.isBullishEngulfing)
           ) {
             console.log("last candle is bullish hammer and  near ema");
             // const closingPrices = ohlcv.map((candle) => candle[4]);
@@ -426,9 +424,7 @@ const findTrades = async () => {
           if (
             result.isNearEMA &&
             result2.isNearEMA &&
-            (result.isInvertedHammer ||
-              result.isBearishEngulfing ||
-              result.isBearishHarami)
+            (result.isInvertedHammer || result.isBearishEngulfing)
           ) {
             // const closingPrices = ohlcv.map((candle) => candle[4]);
             // console.log("last candle is beairhs and below EMA");
@@ -686,8 +682,8 @@ const goToSmallerFrame = async (type) => {
     symbol: SYMBOL,
     atr, // from your timeframe (e.g., 30m ATR)
     price: safePrice, // your live price
-    minPct: 0.0065,
-    maxHours: 4, // "only block trades for the first 3–4 hours"
+    minPct: 0.0084,
+    maxHours: 6, // "only block trades for the first 3–4 hours"
   });
   if (sideways) {
     console.log("market is sideways ");
