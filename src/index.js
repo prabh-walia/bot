@@ -371,7 +371,9 @@ const findTrades = async () => {
           if (
             result.isNearEMA &&
             result2?.isNearEMA &&
-            (result.isBullishHammer || result.isBullishEngulfing)
+            (result.isBullishHammer ||
+              result.isBullishEngulfing ||
+              result.isBullishHarami)
           ) {
             console.log("last candle is bullish hammer and  near ema");
             // const closingPrices = ohlcv.map((candle) => candle[4]);
@@ -424,7 +426,9 @@ const findTrades = async () => {
           if (
             result.isNearEMA &&
             result2.isNearEMA &&
-            (result.isInvertedHammer || result.isBearishEngulfing)
+            (result.isInvertedHammer ||
+              result.isBearishEngulfing ||
+              result.isBearishHarami)
           ) {
             // const closingPrices = ohlcv.map((candle) => candle[4]);
             // console.log("last candle is beairhs and below EMA");
