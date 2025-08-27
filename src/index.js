@@ -109,9 +109,9 @@ async function isSidewaysATRWithCap({
   symbol,
   atr, // numeric ATR for your working timeframe
   price, // latest price
-  minPct = 0.0065, // 0.65% threshold (tune)
+  minPct = 0.0084, // 0.65% threshold (tune)
   maxHours = 4, // cap: treat as sideways only for first 3–4h
-  overshoot = 2.1, // your existing factor
+  overshoot = 1.7, // your existing factor
   delayFn = (ms) => new Promise((r) => setTimeout(r, ms)), // inject if you want
   nowTs = Date.now(),
 }) {
@@ -125,7 +125,7 @@ async function isSidewaysATRWithCap({
   console.log("atr pct ->", atrPct);
   // pull state
   const st = SIDEWAYS_STATE.get(symbol) || { active: false, since: 0 };
-
+  console.log("atr pct");
   if (atrPct < minPct) {
     // entering or continuing sideways
     if (!st.active) {
@@ -689,6 +689,7 @@ const goToSmallerFrame = async (type) => {
     console.log("market is sideways ");
     return;
   } else {
+    console.log("🟢 sidways test pased"), atr;
     const lastCandle = ohlcv[ohlcv.length - 2];
     const open = lastCandle[1];
     const high = lastCandle[2];
