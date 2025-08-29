@@ -388,6 +388,25 @@ const findTrades = async () => {
           console.log(`[SR] ✅ passed: ${sr.reason}`);
         }
 
+        const safePrice = await getSafePrice();
+        const gate = await sidewaysGate({
+          symbol: SYMBOL,
+          atr,
+          price: safePrice,
+          minPct: 0.0084, // tune
+          minHours: 5,
+          breakoutBuf: 0.003,
+        });
+
+        if (gate.block) {
+          console.log(
+            `⏸ Blocked (${gate.regime}). Range: [${gate.lo?.toFixed?.(
+              4
+            )}, ${gate.hi?.toFixed?.(4)}] Hours=${gate.hours?.toFixed?.(2)}`
+          );
+          continue;
+        }
+
         if (trend === "bullish") {
           const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
           const { avg, close, ema, last2hCandle, prev2hCandle } =
@@ -720,98 +739,77 @@ const goToSmallerFrame = async (type) => {
     return;
   }
 
-  const safePrice = await getSafePrice();
-  const gate = await sidewaysGate({
-    symbol: SYMBOL,
-    atr,
-    price: safePrice,
-    minPct: 0.0084, // tune
-    minHours: 6, // your “minimum time” block
-    breakoutBuf: 0.003,
-  });
+  console.log("🟢 sidways test pased"), atr;
+  const lastCandle = ohlcv[ohlcv.length - 2];
+  const open = lastCandle[1];
+  const high = lastCandle[2];
+  const low = lastCandle[3];
+  const close = lastCandle[4];
+  console.log(`📊 Price: ${price} | High: ${high} | Low: ${low}`);
 
-  if (gate.block) {
-    console.log(
-      `⏸ Blocked (${gate.regime}). Range: [${gate.lo?.toFixed?.(
-        4
-      )}, ${gate.hi?.toFixed?.(4)}] Hours=${gate.hours?.toFixed?.(2)}`
-    );
-    return;
-  } else {
-    console.log("🟢 sidways test pased"), atr;
-    const lastCandle = ohlcv[ohlcv.length - 2];
-    const open = lastCandle[1];
-    const high = lastCandle[2];
-    const low = lastCandle[3];
-    const close = lastCandle[4];
-    console.log(`📊 Price: ${price} | High: ${high} | Low: ${low}`);
+  const highBreak = high;
+  const lowInvalidation = low * 0.99; // 99
+  const highInvalidation = high * 1.01; // 1.01
 
-    const highBreak = high;
-    const lowInvalidation = low * 0.99; // 99
-    const highInvalidation = high * 1.01; // 1.01
+  console.log(
+    `${type === "bullish" ? "🟢" : "🔴"} Waiting for ${
+      type === "bullish" ? "high breakout" : "low breakdown"
+    } or invalidation`
+  );
+  console.log(" high invalidation  for short->", highInvalidation);
+  console.log(" low invalidation for long ->", lowInvalidation);
+  const poll = async () => {
+    if (ordersPending) return;
 
-    console.log(
-      `${type === "bullish" ? "🟢" : "🔴"} Waiting for ${
-        type === "bullish" ? "high breakout" : "low breakdown"
-      } or invalidation`
-    );
-    console.log(" high invalidation  for short->", highInvalidation);
-    console.log(" low invalidation for long ->", lowInvalidation);
-    const poll = async () => {
-      if (ordersPending) return;
-
-      const safePrice = await getSafePrice();
-      if (type === "bullish") {
-        console.log("bullish but price is ->", safePrice);
-        if (safePrice >= highBreak) {
-          console.log("✅ Breakout! Placing market BUY");
-          ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
-          try {
-            await placeMarketOrder("buy", atr);
-            await trackOpenPosition();
-            ordersPending = false;
-            tradeCompletedAt = Date.now();
-          } catch (err) {
-            ordersPending = false; // rollback if failed
-            console.error("❌ Failed to place BUY:", err.message);
-          }
-          return;
-        } else if (safePrice <= lowInvalidation) {
-          console.log(
-            "❌ Invalidated (price dropped 0.4% below low). Exiting...",
-            safePrice
-          );
-          return;
+    const safePrice = await getSafePrice();
+    if (type === "bullish") {
+      console.log("bullish but price is ->", safePrice);
+      if (safePrice >= highBreak) {
+        console.log("✅ Breakout! Placing market BUY");
+        ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
+        try {
+          await placeMarketOrder("buy", atr);
+          await trackOpenPosition();
+          ordersPending = false;
+          tradeCompletedAt = Date.now();
+        } catch (err) {
+          ordersPending = false; // rollback if failed
+          console.error("❌ Failed to place BUY:", err.message);
         }
-      } else if (type === "bearish") {
-        console.log("bearish but price is ->", safePrice);
-        if (safePrice <= low) {
-          console.log("✅ Breakdown! Placing market SELL");
-          ordersPending = true;
-          try {
-            await placeMarketOrder("sell", atr);
-            await trackOpenPosition();
-            ordersPending = false;
-            tradeCompletedAt = Date.now();
-          } catch (err) {
-            ordersPending = false;
-            console.error("❌ Failed to place SELL:", err.message);
-          }
-          return;
-        } else if (safePrice >= highInvalidation) {
-          console.log(
-            "❌ Invalidated (price rose 0.4% above high). Exiting..."
-          );
-          return;
-        }
+        return;
+      } else if (safePrice <= lowInvalidation) {
+        console.log(
+          "❌ Invalidated (price dropped 0.4% below low). Exiting...",
+          safePrice
+        );
+        return;
       }
+    } else if (type === "bearish") {
+      console.log("bearish but price is ->", safePrice);
+      if (safePrice <= low) {
+        console.log("✅ Breakdown! Placing market SELL");
+        ordersPending = true;
+        try {
+          await placeMarketOrder("sell", atr);
+          await trackOpenPosition();
+          ordersPending = false;
+          tradeCompletedAt = Date.now();
+        } catch (err) {
+          ordersPending = false;
+          console.error("❌ Failed to place SELL:", err.message);
+        }
+        return;
+      } else if (safePrice >= highInvalidation) {
+        console.log("❌ Invalidated (price rose 0.4% above high). Exiting...");
+        return;
+      }
+    }
 
-      const nextDelay = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
-      setTimeout(poll, nextDelay);
-    };
+    const nextDelay = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+    setTimeout(poll, nextDelay);
+  };
 
-    poll(); // start polling
-  }
+  poll(); // start polling
 };
 const trackOpenPosition = async () => {
   console.log("📡 Tracking active position...");
