@@ -105,43 +105,82 @@ const isSymbolNear2hEMA = async (symbol) => {
     percentDiff,
   };
 };
-async function isSidewaysATRWithCap({
+function touchSidewaysState(symbol, price, nowTs) {
+  let st = SIDEWAYS_STATE.get(symbol);
+  if (!st) {
+    st = { active: true, since: nowTs, hi: price, lo: price };
+    SIDEWAYS_STATE.set(symbol, st);
+  } else {
+    st.hi = Math.max(st.hi, price);
+    st.lo = Math.min(st.lo, price);
+  }
+  return st;
+}
+async function sidewaysGate({
   symbol,
-  atr, // numeric ATR for your working timeframe
-  price, // latest price
-  minPct = 0.0084, // 0.65% threshold (tune)
-  maxHours = 4, // cap: treat as sideways only for first 3–4h
-  overshoot = 1.7, // your existing factor
-  delayFn = (ms) => new Promise((r) => setTimeout(r, ms)), // inject if you want
+  atr,
+  price,
+  overshoot = 1.7,
+  minPct = 0.0084, // ~0.84% after overshoot (tweak)
+  minHours = 4, // block for at least N hours
+  breakoutBuf = 0.003, // 0.3% buffer beyond range for breakout
   nowTs = Date.now(),
 }) {
-  // guard price (your original pattern)
-  let safePrice = 0;
+  if (!Number.isFinite(atr) || atr <= 0)
+    return { block: true, reason: "bad_atr" };
+  if (!Number.isFinite(price) || price <= 0)
+    return { block: true, reason: "bad_price" };
 
-  safePrice = price;
+  const atrPct = (atr * overshoot) / price;
 
-  // compute ATR% of price (with your overshoot factor)
-  const atrPct = (atr * overshoot) / safePrice;
-  console.log("atr pct ->", atrPct);
-  // pull state
-  const st = SIDEWAYS_STATE.get(symbol) || { active: false, since: 0 };
-  console.log("atr pct");
-  if (atrPct < minPct) {
-    // entering or continuing sideways
-    if (!st.active) {
-      st.active = true;
-      st.since = nowTs;
-      SIDEWAYS_STATE.set(symbol, st);
-    }
-    const hours = (nowTs - st.since) / 36e5; // ms -> hours
-    const stillWithinCap = hours <= maxHours;
-    // true only for the first `maxHours` hours of the sideways regime
-    return stillWithinCap;
-  } else {
-    // regime ended → reset
-    if (st.active) SIDEWAYS_STATE.delete(symbol);
-    return false;
+  // not sideways -> clear & allow
+  if (atrPct >= minPct) {
+    if (SIDEWAYS_STATE.has(symbol)) SIDEWAYS_STATE.delete(symbol);
+    return { block: false, regime: "normal" };
   }
+
+  // sideways -> maintain a running range
+  const st = touchSidewaysState(symbol, price, nowTs);
+  const hours = (nowTs - st.since) / 36e5;
+
+  // still within minimum block window
+  if (hours < minHours) {
+    return {
+      block: true,
+      regime: "sideways_block_minWindow",
+      since: st.since,
+      hours,
+      hi: st.hi,
+      lo: st.lo,
+    };
+  }
+
+  // after minHours: allow ONLY after a true breakout of the sideways range
+  const longBreak = price > st.hi * (1 + breakoutBuf);
+  const shortBreak = price < st.lo * (1 - breakoutBuf);
+
+  if (longBreak || shortBreak) {
+    // breakout occurred → UNBLOCK going forward
+    SIDEWAYS_STATE.delete(symbol);
+    return {
+      block: false,
+      regime: "sideways_breakout_released",
+      longBreak,
+      shortBreak,
+      hi: st.hi,
+      lo: st.lo,
+    };
+  }
+
+  // no breakout yet → keep blocking
+  return {
+    block: true,
+    regime: "sideways_wait_breakout",
+    since: st.since,
+    hours,
+    hi: st.hi,
+    lo: st.lo,
+  };
 }
 
 function updateRisk(result) {
@@ -682,15 +721,21 @@ const goToSmallerFrame = async (type) => {
   }
 
   const safePrice = await getSafePrice();
-  const sideways = await isSidewaysATRWithCap({
+  const gate = await sidewaysGate({
     symbol: SYMBOL,
-    atr, // from your timeframe (e.g., 30m ATR)
-    price: safePrice, // your live price
-    minPct: 0.0084,
-    maxHours: 6, // "only block trades for the first 3–4 hours"
+    atr,
+    price: safePrice,
+    minPct: 0.0084, // tune
+    minHours: 6, // your “minimum time” block
+    breakoutBuf: 0.003,
   });
-  if (sideways) {
-    console.log("market is sideways ");
+
+  if (gate.block) {
+    console.log(
+      `⏸ Blocked (${gate.regime}). Range: [${gate.lo?.toFixed?.(
+        4
+      )}, ${gate.hi?.toFixed?.(4)}] Hours=${gate.hours?.toFixed?.(2)}`
+    );
     return;
   } else {
     console.log("🟢 sidways test pased"), atr;
