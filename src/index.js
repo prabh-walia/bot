@@ -377,17 +377,6 @@ const findTrades = async () => {
           isTrueTrend = false;
         }
 
-        const sr = await passSimpleSR(SYMBOL, trend);
-        if (SR_MODE === "log") {
-          console.log(`[SR] ${sr.pass ? "✅" : "❌"} ${sr.reason}`);
-        } else {
-          if (!sr.pass) {
-            console.log(`[SR] ❌ blocked: ${sr.reason}`);
-            continue;
-          }
-          console.log(`[SR] ✅ passed: ${sr.reason}`);
-        }
-
         const safePrice = await getSafePrice();
         const gate = await sidewaysGate({
           symbol: SYMBOL,
@@ -426,6 +415,21 @@ const findTrades = async () => {
             result2.isNearEMA
           );
           console.log("CURRENT PRICE ->", price);
+
+          if (close < ema) {
+            const sr = await passSimpleSR(SYMBOL, trend);
+            if (SR_MODE === "log") {
+              console.log(`[SR] ${sr.pass ? "✅" : "❌"} ${sr.reason}`);
+            } else {
+              if (!sr.pass) {
+                console.log(`[SR] ❌ blocked: ${sr.reason}`);
+                continue;
+              }
+              console.log(`[SR] ✅ passed: ${sr.reason}`);
+            }
+          } else {
+            console.log(`[SR] ⏩ skipped (bullish but 4h close ABOVE EMA)`);
+          }
           if (
             result.isNearEMA &&
             result2?.isNearEMA &&
@@ -481,6 +485,21 @@ const findTrades = async () => {
             "2h ema close near ? ->",
             result2.isNearEMA
           );
+
+          if (close > ema) {
+            const sr = await passSimpleSR(SYMBOL, trend);
+            if (SR_MODE === "log") {
+              console.log(`[SR] ${sr.pass ? "✅" : "❌"} ${sr.reason}`);
+            } else {
+              if (!sr.pass) {
+                console.log(`[SR] ❌ blocked: ${sr.reason}`);
+                continue;
+              }
+              console.log(`[SR] ✅ passed: ${sr.reason}`);
+            }
+          } else {
+            console.log(`[SR] ⏩ skipped (bearish but 4h close BELOW EMA)`);
+          }
           if (
             result.isNearEMA &&
             result2.isNearEMA &&
