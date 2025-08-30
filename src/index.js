@@ -105,25 +105,14 @@ const isSymbolNear2hEMA = async (symbol) => {
     percentDiff,
   };
 };
-function touchSidewaysState(symbol, price, nowTs) {
-  let st = SIDEWAYS_STATE.get(symbol);
-  if (!st) {
-    st = { active: true, since: nowTs, hi: price, lo: price };
-    SIDEWAYS_STATE.set(symbol, st);
-  } else {
-    st.hi = Math.max(st.hi, price);
-    st.lo = Math.min(st.lo, price);
-  }
-  return st;
-}
+
 async function sidewaysGate({
   symbol,
   atr,
   price,
   overshoot = 1.7,
-  minPct = 0.0084, // ~0.84% after overshoot (tweak)
+  minPct = 0.0084, // ~0.84% after overshoot
   minHours = 4, // block for at least N hours
-  breakoutBuf = 0.003, // 0.3% buffer beyond range for breakout
   nowTs = Date.now(),
 }) {
   if (!Number.isFinite(atr) || atr <= 0)
@@ -133,53 +122,37 @@ async function sidewaysGate({
 
   const atrPct = (atr * overshoot) / price;
 
-  // not sideways -> clear & allow
+  // Not sideways → allow
   if (atrPct >= minPct) {
     if (SIDEWAYS_STATE.has(symbol)) SIDEWAYS_STATE.delete(symbol);
     return { block: false, regime: "normal" };
   }
 
-  // sideways -> maintain a running range
-  const st = touchSidewaysState(symbol, price, nowTs);
+  // Sideways → track start time
+  let st = SIDEWAYS_STATE.get(symbol);
+  if (!st) {
+    st = { since: nowTs };
+    SIDEWAYS_STATE.set(symbol, st);
+  }
   const hours = (nowTs - st.since) / 36e5;
 
-  // still within minimum block window
+  // Still within block window
   if (hours < minHours) {
     return {
       block: true,
       regime: "sideways_block_minWindow",
       since: st.since,
       hours,
-      hi: st.hi,
-      lo: st.lo,
     };
   }
 
-  // after minHours: allow ONLY after a true breakout of the sideways range
-  const longBreak = price > st.hi * (1 + breakoutBuf);
-  const shortBreak = price < st.lo * (1 - breakoutBuf);
-
-  if (longBreak || shortBreak) {
-    // breakout occurred → UNBLOCK going forward
-    SIDEWAYS_STATE.delete(symbol);
-    return {
-      block: false,
-      regime: "sideways_breakout_released",
-      longBreak,
-      shortBreak,
-      hi: st.hi,
-      lo: st.lo,
-    };
-  }
-
-  // no breakout yet → keep blocking
+  // After minHours → release automatically
+  SIDEWAYS_STATE.delete(symbol);
   return {
-    block: true,
-    regime: "sideways_wait_breakout",
+    block: false,
+    regime: "sideways_time_released",
     since: st.since,
     hours,
-    hi: st.hi,
-    lo: st.lo,
   };
 }
 
