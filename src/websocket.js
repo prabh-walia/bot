@@ -7,26 +7,26 @@ const callbacks = [];
 // Function to initialize WebSocket
 const initWebSocket = (symbol) => {
   if (ws) {
-    console.warn("WebSocket already initialized");
+    console.warn("Closing old WebSocket before opening new one");
+    ws.removeAllListeners(); // 🔑 remove all old event listeners
     ws.close();
+    ws = null;
+    callbacks = []; // 🔑 clear callbacks so old ones don’t fire
   }
 
   const wsUrl = `wss://fstream.binance.com/ws/${symbol}@trade`;
   ws = new WebSocket(wsUrl);
 
   ws.on("open", () => {
-    console.log("WebSocket connection opened");
+    console.log(`WebSocket connection opened for ${symbol}`);
   });
 
   ws.on("message", (data) => {
     try {
       const tradeData = JSON.parse(data);
-
       if (tradeData && tradeData.p) {
-        currentPrice = tradeData.p;
-
+        currentPrice = parseFloat(tradeData.p);
         callbacks.forEach((callback) => callback(currentPrice));
-      } else {
       }
     } catch (error) {
       console.error("Error parsing websocket message data:", error);
@@ -38,9 +38,9 @@ const initWebSocket = (symbol) => {
   });
 
   ws.on("close", () => {
-    console.log("WebSocket connection closed");
+    console.log(`WebSocket connection closed for ${symbol}`);
     ws = null;
-    // initWebSocket(symbol);
+    callbacks = []; // ensure no leftover listeners
   });
 };
 
@@ -63,11 +63,17 @@ const onPriceUpdate = (callback) => {
 
 // Function to close the WebSocket connection
 const closeWebSocket = () => {
-  callbacks.length = 0;
-  if (ws) {
-    ws.close();
-    ws = null;
-  }
+  return new Promise((resolve) => {
+    if (ws) {
+      ws.removeAllListeners();
+      ws.once("close", resolve); // resolve only after closed
+      ws.close();
+      ws = null;
+      callbacks = [];
+    } else {
+      resolve();
+    }
+  });
 };
 
 export { initWebSocket, getCurrentPrice, onPriceUpdate, closeWebSocket };

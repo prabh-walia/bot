@@ -11,7 +11,7 @@ export const getRealTimePrice = async (symbol) => {
       // ⛔ No need to reopen if already active
       return;
     }
-    closeWebSocket();
+    await closeWebSocket();
     console.log(`📡 Opening socket for ${symbol}`);
     activeSymbol = symbol;
     initWebSocket(symbol);
