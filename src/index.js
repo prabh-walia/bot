@@ -110,8 +110,8 @@ async function sidewaysGate({
   symbol,
   atr,
   price,
-  overshoot = 1.7,
-  minPct = 0.0084, // ~0.84% after overshoot
+  overshoot = 2.6,
+  minPct = 0.0083, // ~0.84% after overshoot
   minHours = 4, // block for at least N hours
   nowTs = Date.now(),
 }) {
@@ -1152,8 +1152,8 @@ const placeMarketOrder = async (side, atr) => {
   const amountTP2 = totalAmount * 0.45;
 
   ATR = atr;
-  const slMultiplier = 2.2;
-  const tp1Multiplier = 8.5;
+  const slMultiplier = 2.5;
+  const tp1Multiplier = 9.6;
 
   const slSide = side === "buy" ? "sell" : "buy";
 
