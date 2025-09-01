@@ -1204,6 +1204,10 @@ const placeMarketOrder = async (side, atr) => {
         stopLossPrice,
         "price ",
         price,
+        "atr",
+        atr,
+        "safePrce>",
+        safePrice,
         "amunt ->",
         totalAmount
       );
@@ -1234,6 +1238,9 @@ const placeMarketOrder = async (side, atr) => {
         takeProfitPrice1,
         "price ",
         price,
+        safePrice,
+        "ATR",
+        atr,
         "amunt ->",
         amountTP1
       );
