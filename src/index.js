@@ -182,7 +182,7 @@ function isOverextended(ohlcv, lookback = 7, threshold = 0.025) {
   const firstClose = recent[0][4];
   const lastClose = recent[recent.length - 1][4];
   const movePct = Math.abs((lastClose - firstClose) / firstClose);
-
+  console.log("extend percent 0>", movePct);
   return movePct >= threshold; // true if move > threshold (2.5–3%)
 }
 
@@ -384,6 +384,8 @@ const findTrades = async () => {
             "⚠️ Market already moved 3% in last 7 candles. Skipping hammer entry."
           );
           continue;
+        } else {
+          console.log("not extended . ");
         }
         if (trend === "bullish") {
           const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
