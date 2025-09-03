@@ -180,7 +180,7 @@ function isOverextended(ohlcv, lookback = 7, threshold = 0.025) {
   // 2.5–3%
   const recent = ohlcv.slice(-lookback); // last 7 candles
   const firstClose = recent[0][4];
-  const lastClose = recent[recent.length - 1][4];
+  const lastClose = recent[recent.length - 2][4];
   const movePct = Math.abs((lastClose - firstClose) / firstClose);
   console.log("extend percent 0>", movePct);
   return movePct >= threshold; // true if move > threshold (2.5–3%)
