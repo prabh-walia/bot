@@ -176,6 +176,16 @@ function updateRisk(result) {
     }
   }
 }
+function isOverextended(ohlcv, lookback = 7, threshold = 0.025) {
+  // 2.5–3%
+  const recent = ohlcv.slice(-lookback); // last 7 candles
+  const firstClose = recent[0][4];
+  const lastClose = recent[recent.length - 1][4];
+  const movePct = Math.abs((lastClose - firstClose) / firstClose);
+
+  return movePct >= threshold; // true if move > threshold (2.5–3%)
+}
+
 const findTrades = async () => {
   while (true) {
     try {
@@ -368,7 +378,13 @@ const findTrades = async () => {
           );
           continue;
         }
-
+        const extended = isOverextended(ohlcv, 7, 0.026); // 3% in last 7 candles
+        if (extended) {
+          console.log(
+            "⚠️ Market already moved 3% in last 7 candles. Skipping hammer entry."
+          );
+          continue;
+        }
         if (trend === "bullish") {
           const result = checkLastCandle(lastCandle, smallEma, prevCandle); //12 ema
           const { avg, close, ema, last2hCandle, prev2hCandle } =
