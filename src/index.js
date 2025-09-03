@@ -177,13 +177,21 @@ function updateRisk(result) {
   }
 }
 function isOverextended(ohlcv, lookback = 8, threshold = 0.025) {
-  // 2.5–3%
-  const recent = ohlcv.slice(-lookback); // last 7 candles
+  // exclude the live candle (use only completed candles)
+  const recent = ohlcv.slice(-lookback - 1, -1); // last 7 *completed* candles
+
   const firstClose = recent[0][4];
-  const lastClose = recent[recent.length - 2][4];
+  const lastClose = recent[recent.length - 1][4];
+
   const movePct = Math.abs((lastClose - firstClose) / firstClose);
-  console.log("extend percent 0>", movePct);
-  return movePct >= threshold; // true if move > threshold (2.5–3%)
+
+  console.log(
+    `📊 Overextension check: from ${firstClose.toFixed(
+      4
+    )} → ${lastClose.toFixed(4)} | move = ${(movePct * 100).toFixed(2)}%`
+  );
+
+  return movePct >= threshold; // true if move > threshold (e.g. 2.5%)
 }
 
 const findTrades = async () => {
