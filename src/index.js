@@ -176,7 +176,7 @@ function updateRisk(result) {
     }
   }
 }
-function isOverextended(ohlcv, lookback = 8, threshold = 0.025) {
+function isOverextended(ohlcv, lookback = 9, threshold = 0.025) {
   // exclude the live candle (use only completed candles)
   const recent = ohlcv.slice(-lookback - 1, -1); // last 7 *completed* candles
 
