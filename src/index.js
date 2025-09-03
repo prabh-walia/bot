@@ -176,7 +176,7 @@ function updateRisk(result) {
     }
   }
 }
-function isOverextended(ohlcv, lookback = 7, threshold = 0.025) {
+function isOverextended(ohlcv, lookback = 8, threshold = 0.025) {
   // 2.5–3%
   const recent = ohlcv.slice(-lookback); // last 7 candles
   const firstClose = recent[0][4];
