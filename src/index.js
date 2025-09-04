@@ -62,6 +62,7 @@ let SL_TRAIL_INTERVAL = 3;
 let consecutiveLosses = 0;
 let NO_MOVE_ZONE_PERCENT = 0.006;
 let ordersPlaced = [];
+let percentDiffGlobal;
 const MIN_NOTIONAL = 5;
 let tradeCompletedAt = 0;
 let initialProfitBooked = false;
@@ -441,7 +442,7 @@ const findTrades = async () => {
             // const latestRSI20 = calculateRSI20(closingPrices);
 
             // if (latestRSI20 < 84) {
-            await goToSmallerFrame("bullish");
+            await goToSmallerFrame("bullish", percentDiff);
             // }
           }
 
@@ -510,7 +511,7 @@ const findTrades = async () => {
             // console.log("last candle is beairhs and below EMA");
             // const latestRSI20 = calculateRSI20(closingPrices);
             // if (latestRSI20 > 20) {
-            await goToSmallerFrame("bearish");
+            await goToSmallerFrame("bearish", percentDiff);
             console.log("returned from smaller frame");
           }
           console.log(
@@ -744,20 +745,20 @@ function checkLastCandleforbigtrend(ema, close) {
   };
 }
 
-const goToSmallerFrame = async (type) => {
+const goToSmallerFrame = async (type, percentDiff) => {
   console.log("order already there? ->", ordersPending);
   if (ordersPending) {
     console.log("orders already pending");
     return;
   }
-
+  percentDiffGlobal = percentDiff;
   const { ohlcv, atr } = await fetchAndAnalyzeCandles("small", SYMBOL);
   if (!ohlcv || ohlcv.length === 0) {
     console.error("No OHLCV data available");
     return;
   }
 
-  console.log("🟢 sidways test pased"), atr;
+  console.log("🟢 sidways test pased", atr);
   const lastCandle = ohlcv[ohlcv.length - 2];
   const open = lastCandle[1];
   const high = lastCandle[2];
@@ -1043,6 +1044,52 @@ const trackOpenPosition = async () => {
         slUpdated = true;
       }
 
+      if (
+        percentDiffGlobal < 0 &&
+        percentDiffGlobal > -2 &&
+        trend == "bullish"
+      ) {
+        const movePct =
+          side === "buy"
+            ? (safePrice - entryPrice) / entryPrice
+            : (entryPrice - safePrice) / entryPrice;
+
+        if (movePct >= 0.021) {
+          console.warn(
+            "🚨 Hard-exit: +2% move from entry. Closing position now."
+          );
+          try {
+            const openOrders = await binance.fetchOpenOrders(SYMBOL);
+            for (const o of openOrders) {
+              if (o.type === "stop_market" || o.type === "take_profit_market") {
+                await binance.cancelOrder(o.id, SYMBOL);
+                console.log(`🧹 Canceled exit order: ${o.id}`);
+              }
+            }
+          } catch (e) {
+            console.warn("⚠️ Could not cancel exits:", e.message);
+          }
+
+          const exitSide = side === "buy" ? "sell" : "buy";
+          try {
+            await binance.createOrder(
+              SYMBOL,
+              "MARKET",
+              exitSide,
+              posSize,
+              undefined,
+              { reduceOnly: true }
+            );
+            console.log("✅ Hard-exit market close sent.");
+          } catch (e) {
+            console.error("❌ Hard-exit failed:", e.message);
+          }
+
+          updateRisk("win");
+          await cancelAllOpenOrders();
+          return;
+        }
+      }
       if (trailingActive) {
         // protect price
         let safePrice = 0;
