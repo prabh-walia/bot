@@ -62,7 +62,7 @@ let SL_TRAIL_INTERVAL = 3;
 let consecutiveLosses = 0;
 let NO_MOVE_ZONE_PERCENT = 0.006;
 let ordersPlaced = [];
-let percentDiffGlobal;
+let percentDiffGlobal = 0;
 const MIN_NOTIONAL = 5;
 let tradeCompletedAt = 0;
 let initialProfitBooked = false;
