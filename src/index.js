@@ -71,7 +71,7 @@ const SR_MODE = "enforce"; // "log" | "enforce"
 const SR_LEFT_RIGHT = 2; // swing sensitivity
 const SR_ATR_MULT = 0.3; // zone buffer = 0.35 * 30m ATR
 const SIDEWAYS_STATE = new Map();
-const pct = 0;
+let pct = 0;
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
