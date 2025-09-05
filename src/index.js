@@ -71,6 +71,7 @@ const SR_MODE = "enforce"; // "log" | "enforce"
 const SR_LEFT_RIGHT = 2; // swing sensitivity
 const SR_ATR_MULT = 0.3; // zone buffer = 0.35 * 30m ATR
 const SIDEWAYS_STATE = new Map();
+const pct = 0;
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
@@ -402,7 +403,7 @@ const findTrades = async () => {
             await get2hEMA12(SYMBOL);
 
           const result3 = checkLastCandle(last2hCandle, ema, prev2hCandle);
-
+          console.log("pct difference ->", result.emaDistancePct);
           console.log("ema ->>>>", ema, close);
           const result2 = checkLastCandleforbigtrend(ema, avg);
           console.log(
@@ -442,7 +443,11 @@ const findTrades = async () => {
             // const latestRSI20 = calculateRSI20(closingPrices);
 
             // if (latestRSI20 < 84) {
-            await goToSmallerFrame("bullish", percentDiff);
+            await goToSmallerFrame(
+              "bullish",
+              percentDiff,
+              result.emaDistancePct
+            );
             // }
           }
 
@@ -467,7 +472,7 @@ const findTrades = async () => {
           //   );
         } else if (trend == "bearish") {
           const result = checkLastCandle(lastCandle, smallEma, prevCandle);
-
+          console.log("pct difference ->", result.emaDistancePct);
           const { avg, close, ema, last2hCandle, prev2hCandle } =
             await get2hEMA12(SYMBOL);
           console.log("ema-o ->", last2hCandle, close);
@@ -511,7 +516,11 @@ const findTrades = async () => {
             // console.log("last candle is beairhs and below EMA");
             // const latestRSI20 = calculateRSI20(closingPrices);
             // if (latestRSI20 > 20) {
-            await goToSmallerFrame("bearish", percentDiff);
+            await goToSmallerFrame(
+              "bearish",
+              percentDiff,
+              result.emaDistancePct
+            );
             console.log("returned from smaller frame");
           }
           console.log(
@@ -615,7 +624,9 @@ function checkLastCandle(candle, ema, prevCandle) {
   const [, pOpen, pHigh, pLow, pClose] = prevCandle;
 
   // --- EMA proximity ---
-  const isNearEMA = Math.abs(close - ema) <= ema * 0.0092; // ~1.4%
+  const emaDiff = close - ema;
+  const emaDistancePct = Math.abs((emaDiff / ema) * 100); // % distance
+  const isNearEMA = Math.abs(emaDiff) <= ema * 0.013; // ~0.92%
 
   // --- Ranges, bodies, wicks ---
   const range = Math.max(1e-9, high - low);
@@ -659,16 +670,14 @@ function checkLastCandle(candle, ema, prevCandle) {
   const isBearishEngulfing = isRed && bodyNotTinyForEngulf && bodyEngulfsPrev;
 
   // ----- HARAMI (inside body) -----
-  // Tunables:
-  const MIN_PREV_BODY_FRAC = 0.25; // require previous body to be at least 25% of its range
-  const MAX_CURR_VS_PREV_BODY = 0.7; // current body <= 70% of previous body (avoid equal-size “inside”)
+  const MIN_PREV_BODY_FRAC = 0.25;
+  const MAX_CURR_VS_PREV_BODY = 0.7;
   const prevRange = Math.max(1e-9, pHigh - pLow);
   const prevBody = Math.abs(pClose - pOpen);
 
   const prevBodyNotTiny = prevBody >= prevRange * MIN_PREV_BODY_FRAC;
   const currBodySmaller = body <= prevBody * MAX_CURR_VS_PREV_BODY;
 
-  // “Inside” means current body fully within previous body bounds
   const bodyInsidePrev =
     bodyLow >= prevBodyLow - eps && bodyHigh <= prevBodyHigh + eps;
 
@@ -678,47 +687,15 @@ function checkLastCandle(candle, ema, prevCandle) {
   const isBearishHarami =
     prevGreen && isRed && prevBodyNotTiny && currBodySmaller && bodyInsidePrev;
 
-  // ---- reasons for debugging (optional) ----
-  const reasons = {
-    isNearEMA,
-    hammer: {
-      bullishHammer: isBullishHammer,
-      invertedHammer: isInvertedHammer,
-    },
-    engulf: {
-      isGreen,
-      isRed,
-      body,
-      range,
-      bodyNotTinyForEngulf,
-      bodyEngulfsPrev,
-      bodyLow,
-      bodyHigh,
-      prevBodyLow,
-      prevBodyHigh,
-    },
-    harami: {
-      prevGreen,
-      prevRed,
-      prevBody,
-      prevRange,
-      prevBodyNotTiny,
-      currBodySmaller,
-      bodyInsidePrev,
-      MIN_PREV_BODY_FRAC,
-      MAX_CURR_VS_PREV_BODY,
-    },
-  };
-
   return {
     isNearEMA,
+    emaDistancePct,
     isBullishHammer,
     isInvertedHammer,
     isBullishEngulfing,
     isBearishEngulfing,
     isBullishHarami,
     isBearishHarami,
-    reasons,
   };
 }
 
@@ -745,13 +722,14 @@ function checkLastCandleforbigtrend(ema, close) {
   };
 }
 
-const goToSmallerFrame = async (type, percentDiff) => {
+const goToSmallerFrame = async (type, percentDiff, emapct) => {
   console.log("order already there? ->", ordersPending);
   if (ordersPending) {
     console.log("orders already pending");
     return;
   }
   percentDiffGlobal = percentDiff;
+  pct = emapct;
   const { ohlcv, atr } = await fetchAndAnalyzeCandles("small", SYMBOL);
   if (!ohlcv || ohlcv.length === 0) {
     console.error("No OHLCV data available");
@@ -787,7 +765,7 @@ const goToSmallerFrame = async (type, percentDiff) => {
         console.log("✅ Breakout! Placing market BUY");
         ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
         try {
-          await placeMarketOrder("buy", atr);
+          await placeMarketOrder("buy", atr, pct);
           await trackOpenPosition();
           ordersPending = false;
           tradeCompletedAt = Date.now();
@@ -809,7 +787,7 @@ const goToSmallerFrame = async (type, percentDiff) => {
         console.log("✅ Breakdown! Placing market SELL");
         ordersPending = true;
         try {
-          await placeMarketOrder("sell", atr);
+          await placeMarketOrder("sell", atr, pct);
           await trackOpenPosition();
           ordersPending = false;
           tradeCompletedAt = Date.now();
@@ -844,6 +822,12 @@ const trackOpenPosition = async () => {
   let lastSLUpdateTime = 0;
   let lastUnrealizedPnL = 0;
   let currentSLATRMultiplier = 3.5;
+  let risk = "safe";
+  if (pct > 0.5 && pct < 0.85) {
+    risk = "medium";
+  } else if (risk > 0.85 && risk < 1.2) {
+    risk = "hard";
+  }
 
   while (true) {
     await delay(Math.floor(Math.random() * (3100 - 2500 + 1)) + 2400);
@@ -1090,6 +1074,49 @@ const trackOpenPosition = async () => {
           return;
         }
       }
+
+      if (risk == "hard") {
+        const movePct =
+          side === "buy"
+            ? (safePrice - entryPrice) / entryPrice
+            : (entryPrice - safePrice) / entryPrice;
+
+        if (movePct > 0.02) {
+          console.warn(
+            "🚨 Hard-exit: +2% move from entry. Closing position now."
+          );
+
+          const exitSide = side === "buy" ? "sell" : "buy";
+          try {
+            await binance.createOrder(
+              SYMBOL,
+              "MARKET",
+              exitSide,
+              posSize,
+              undefined,
+              { reduceOnly: true }
+            );
+            console.log("✅ Hard-exit market close sent.");
+          } catch (e) {
+            console.error("❌ Hard-exit failed:", e.message);
+          }
+          try {
+            const openOrders = await binance.fetchOpenOrders(SYMBOL);
+            for (const o of openOrders) {
+              if (o.type === "stop_market" || o.type === "take_profit_market") {
+                await binance.cancelOrder(o.id, SYMBOL);
+                console.log(`🧹 Canceled exit order: ${o.id}`);
+              }
+            }
+          } catch (e) {
+            console.warn("⚠️ Could not cancel exits:", e.message);
+          }
+
+          updateRisk("win");
+          await cancelAllOpenOrders();
+          return;
+        }
+      }
       if (trailingActive) {
         // protect price
         let safePrice = 0;
@@ -1203,8 +1230,14 @@ const trackOpenPosition = async () => {
   }
 };
 
-const placeMarketOrder = async (side, atr) => {
+const placeMarketOrder = async (side, atr, pct) => {
   // ===== Step 0: Prevent double entry =====
+  let risk = "safe";
+  if (pct > 0.5 && pct < 0.85) {
+    risk = "medium";
+  } else if (risk > 0.85 && risk < 1.2) {
+    risk = "hard";
+  }
   const positions = await binance.fetchPositions();
   const position = positions.find(
     (p) =>
@@ -1225,8 +1258,8 @@ const placeMarketOrder = async (side, atr) => {
   const amountTP2 = totalAmount * 0.45;
 
   ATR = atr;
-  const slMultiplier = 2.5;
-  const tp1Multiplier = 9.6;
+  const slMultiplier = 2.4;
+  const tp1Multiplier = risk == "safe" ? 9.4 : risk == "medium" ? 5.2 : 4.2;
 
   const slSide = side === "buy" ? "sell" : "buy";
 
