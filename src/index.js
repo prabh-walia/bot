@@ -615,7 +615,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   const [, pOpen, pHigh, pLow, pClose] = prevCandle;
 
   // --- EMA proximity ---
-  const isNearEMA = Math.abs(close - ema) <= ema * 0.014; // ~1.4%
+  const isNearEMA = Math.abs(close - ema) <= ema * 0.0092; // ~1.4%
 
   // --- Ranges, bodies, wicks ---
   const range = Math.max(1e-9, high - low);
