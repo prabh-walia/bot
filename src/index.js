@@ -822,10 +822,11 @@ const trackOpenPosition = async () => {
   let lastSLUpdateTime = 0;
   let lastUnrealizedPnL = 0;
   let currentSLATRMultiplier = 3.5;
+  let pctt = Math.abs(pct);
   let risk = "safe";
-  if (pct > 0.5 && pct < 0.85) {
+  if (pctt > 0.5 && pctt < 0.85) {
     risk = "medium";
-  } else if (risk > 0.85 && risk < 1.2) {
+  } else if (pctt > 0.85 && pctt < 1.2) {
     risk = "hard";
   }
 
