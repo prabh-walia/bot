@@ -625,7 +625,7 @@ function checkLastCandle(candle, ema, prevCandle) {
 
   // --- EMA proximity ---
   const emaDiff = close - ema;
-  const emaDistancePct = Math.abs((emaDiff / ema) * 100); // % distance
+  const emaDistancePct = (emaDiff / ema) * 100; // % distance
   const isNearEMA = Math.abs(emaDiff) <= ema * 0.013; // ~0.92%
 
   // --- Ranges, bodies, wicks ---
@@ -1232,10 +1232,11 @@ const trackOpenPosition = async () => {
 
 const placeMarketOrder = async (side, atr, pct) => {
   // ===== Step 0: Prevent double entry =====
+  let pctt = Math.abs(pct);
   let risk = "safe";
-  if (pct > 0.5 && pct < 0.85) {
+  if (pctt > 0.5 && pctt < 0.85) {
     risk = "medium";
-  } else if (risk > 0.85 && risk < 1.2) {
+  } else if (pctt > 0.85 && pctt < 1.2) {
     risk = "hard";
   }
   const positions = await binance.fetchPositions();
@@ -1250,7 +1251,8 @@ const placeMarketOrder = async (side, atr, pct) => {
   }
 
   let totalAmount = orderQuantity * currentRisk * 1.1;
-  if (weakness === true) {
+  let opp = (side == "buy" && pct < 0) || (side == "sell" && pct > 0);
+  if (weakness === true || opp) {
     totalAmount = totalAmount / 1.5;
   }
 
