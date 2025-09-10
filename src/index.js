@@ -763,6 +763,15 @@ const goToSmallerFrame = async (type, percentDiff, emapct) => {
       console.log("bullish but price is ->", safePrice);
       if (safePrice >= highBreak) {
         console.log("✅ Breakout! Placing market BUY");
+        let opp = pct < 0;
+        if (opp) {
+          if (isOverextended(ohlcv, 4, 0.013)) {
+            console.log(
+              "not placing order. as its overextended against the trend"
+            );
+            return;
+          }
+        }
         ordersPending = true; // <-- SET EARLY TO PREVENT DUPLICATES
         try {
           await placeMarketOrder("buy", atr, pct);
@@ -784,6 +793,15 @@ const goToSmallerFrame = async (type, percentDiff, emapct) => {
     } else if (type === "bearish") {
       console.log("bearish but price is ->", safePrice);
       if (safePrice <= low) {
+        let opp = pct > 0;
+        if (opp) {
+          if (isOverextended(ohlcv, 4, 0.013)) {
+            console.log(
+              "not placing order. as its overextended against the trend"
+            );
+            return;
+          }
+        }
         console.log("✅ Breakdown! Placing market SELL");
         ordersPending = true;
         try {
