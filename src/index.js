@@ -765,7 +765,7 @@ const goToSmallerFrame = async (type, percentDiff, emapct) => {
         console.log("✅ Breakout! Placing market BUY");
         let opp = pct < 0;
         if (opp) {
-          if (isOverextended(ohlcv, 4, 0.013)) {
+          if (isOverextended(ohlcv, 4, 0.016)) {
             console.log(
               "not placing order. as its overextended against the trend"
             );
