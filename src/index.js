@@ -56,7 +56,7 @@ let currentRisk;
 let lastOrderExecuted = false;
 let lastSlOrderExecuted = false;
 let slPercentage;
-let ATR = 8;
+let ATR = 0.011;
 let weakness = false;
 let SL_TRAIL_INTERVAL = 3;
 let consecutiveLosses = 0;
