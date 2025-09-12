@@ -60,6 +60,7 @@ let ATR = 8;
 let weakness = false;
 let SL_TRAIL_INTERVAL = 3;
 let consecutiveLosses = 0;
+let lastResult = "loss";
 let NO_MOVE_ZONE_PERCENT = 0.006;
 let ordersPlaced = [];
 let percentDiffGlobal = 0;
@@ -159,6 +160,7 @@ async function sidewaysGate({
 }
 
 function updateRisk(result) {
+  lastResult = result;
   if (result === "win") {
     consecutiveLosses = 0;
     // Reset only if > 50%
@@ -1094,13 +1096,13 @@ const trackOpenPosition = async () => {
         }
       }
 
-      if (risk == "hard") {
+      if (risk == "hard" || lastResult == "win") {
         const movePct =
           side === "buy"
             ? (safePrice - entryPrice) / entryPrice
             : (entryPrice - safePrice) / entryPrice;
 
-        if (movePct > 0.02) {
+        if (movePct > 0.021) {
           console.warn(
             "🚨 Hard-exit: +2% move from entry. Closing position now."
           );
