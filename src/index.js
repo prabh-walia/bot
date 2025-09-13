@@ -58,8 +58,9 @@ const MIN_ORDER_QUANTITY = {
   "XRP/USDT": 4,
   "SUI/USDT": 3.8,
   "ALGO/USDT": 28,
-  "ENA/USDT": 18,
+  "ENA/USDT": 17,
   "MYX/USDT": 4.5,
+  "HYPE/USDT": 0.23,
 };
 const SL_PERCENTAGE = {
   "1h": 0.009,
@@ -216,7 +217,7 @@ const findTrades = async () => {
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
       if (ordersPending == false) {
-        const prioritySymbols = ["suiusdt", "enausdt", "ethusdt"];
+        const prioritySymbols = ["algousdt", "hypeusdt"];
         let selectedSymbol = null;
 
         for (const sym of prioritySymbols) {
