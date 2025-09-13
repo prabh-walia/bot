@@ -54,10 +54,10 @@ let pct = 0;
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
-  "ETH/USDT": 0.005,
+  "ETH/USDT": 0.002,
   "XRP/USDT": 4,
   "SUI/USDT": 3.8,
-  "ALGO/USDT": 20,
+  "ALGO/USDT": 28,
   "ENA/USDT": 20,
   "MYX/USDT": 4.5,
 };
