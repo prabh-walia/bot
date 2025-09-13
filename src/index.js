@@ -54,10 +54,10 @@ let pct = 0;
 const MIN_ORDER_QUANTITY = {
   "SOL/USDT": 1,
   "LTC/USDT": 0.16,
-  "ETH/USDT": 0.009,
+  "ETH/USDT": 0.005,
   "XRP/USDT": 4,
-  "SUI/USDT": 4,
-  "ALGO/USDT": 300,
+  "SUI/USDT": 3.8,
+  "ALGO/USDT": 20,
   "ENA/USDT": 20,
   "MYX/USDT": 4.5,
 };
@@ -216,7 +216,7 @@ const findTrades = async () => {
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
       if (ordersPending == false) {
-        const prioritySymbols = ["suiusdt", "enausdt", "ethusdt"];
+        const prioritySymbols = ["algousdt", "ethusdt"];
         let selectedSymbol = null;
 
         for (const sym of prioritySymbols) {
