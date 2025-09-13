@@ -2,7 +2,7 @@ import WebSocket from "ws";
 
 let ws = null;
 let currentPrice = null;
-const callbacks = [];
+let callbacks = [];
 
 // Function to initialize WebSocket
 const initWebSocket = (symbol) => {
