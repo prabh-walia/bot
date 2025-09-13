@@ -19,32 +19,10 @@ import { binance } from "./binanceClient.js";
 import { Status } from "./model.js";
 import { trade } from "./globalVariables.js";
 import { price } from "./getPrice.js";
-import { calculatePivotPoints } from "./utils.js";
-import {
-  AMOUNT,
-  FIXED_RISK_AMOUNT,
-  LEVERAGE,
-  BIGGER_TIMEFRAME,
-} from "./config.js";
-import {
-  findPivotHighs,
-  findPivotLows,
-  checkBullishPatternAboveEma,
-} from "./utils.js";
 
-let high = null;
-let low = null;
 let ordersPending = false;
 let error = 0;
-let activeSymbol = null;
-let priceSocket = null;
 
-let neutral = false;
-let hasLoggedTradeTracking = false;
-let tradeExecutionOpen = false;
-let firstBook = false;
-let secondBook = false;
-let finalBook = false;
 let hasLoggedFindingTrades = false;
 let overallTrend;
 let profitBooked = false;
@@ -238,7 +216,7 @@ const findTrades = async () => {
       const fetchInterval = getRandomDelay();
       console.log("Price fetched:", price);
       if (ordersPending == false) {
-        const prioritySymbols = ["suiusdt", "enausdt", "algousdt", "ethusdt"];
+        const prioritySymbols = ["suiusdt", "enausdt", "ethusdt"];
         let selectedSymbol = null;
 
         for (const sym of prioritySymbols) {
