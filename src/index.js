@@ -94,7 +94,7 @@ async function sidewaysGate({
   price,
   overshoot = 2.6,
   minPct = 0.0083, // ~0.84% after overshoot
-  maxPct = 0.0103, // e.g. 12% ATR/price → too volatile
+  maxPct = 0.0113, // e.g. 12% ATR/price → too volatile
   minHours = 4, // block for at least N hours
   nowTs = Date.now(),
 }) {
