@@ -94,6 +94,7 @@ async function sidewaysGate({
   price,
   overshoot = 2.6,
   minPct = 0.0083, // ~0.84% after overshoot
+  maxPct = 0.0103, // e.g. 12% ATR/price → too volatile
   minHours = 4, // block for at least N hours
   nowTs = Date.now(),
 }) {
@@ -104,13 +105,18 @@ async function sidewaysGate({
 
   const atrPct = (atr * overshoot) / price;
 
-  // Not sideways → allow
-  if (atrPct >= minPct) {
-    if (SIDEWAYS_STATE.has(symbol)) SIDEWAYS_STATE.delete(symbol);
-    return { block: false, regime: "normal" };
+  // 🚫 Too volatile → block
+  if (atrPct > maxPct) {
+    return { block: true, regime: "too_volatile", atrPct };
   }
 
-  // Sideways → track start time
+  // ✅ Normal volatility (above min threshold) → allow
+  if (atrPct >= minPct) {
+    if (SIDEWAYS_STATE.has(symbol)) SIDEWAYS_STATE.delete(symbol);
+    return { block: false, regime: "normal", atrPct };
+  }
+
+  // 📉 Sideways → track start time
   let st = SIDEWAYS_STATE.get(symbol);
   if (!st) {
     st = { since: nowTs };
@@ -125,6 +131,7 @@ async function sidewaysGate({
       regime: "sideways_block_minWindow",
       since: st.since,
       hours,
+      atrPct,
     };
   }
 
@@ -135,6 +142,7 @@ async function sidewaysGate({
     regime: "sideways_time_released",
     since: st.since,
     hours,
+    atrPct,
   };
 }
 
@@ -208,8 +216,8 @@ const findTrades = async () => {
         continue;
       }
 
-      if (Date.now() - tradeCompletedAt < 60 * 60 * 1000) {
-        console.log("Within the 30-minute cooldown period, waiting...");
+      if (Date.now() - tradeCompletedAt < 120 * 60 * 1000) {
+        console.log("Within the 2-hour cooldown period, waiting...");
         await new Promise((resolve) => setTimeout(resolve, 1000));
         continue;
       }
@@ -356,7 +364,7 @@ const findTrades = async () => {
           symbol: SYMBOL,
           atr,
           price: safePrice,
-          minPct: 0.0084, // tune
+          minPct: 0.008, // tune
           minHours: 5,
           breakoutBuf: 0.003,
         });
@@ -614,6 +622,8 @@ function checkLastCandle(candle, ema, prevCandle) {
   const body = Math.abs(close - open);
   const lowerWick = Math.min(open, close) - low;
   const upperWick = high - Math.max(open, close);
+  const MIN_BODY_FRAC = 0.001; // 0.1%
+  const isBodyAtLeastMinPct = body >= close * MIN_BODY_FRAC;
 
   // size gates
   const isBodyBigEnough = body >= range * 0.55; // for hammers
@@ -621,12 +631,14 @@ function checkLastCandle(candle, ema, prevCandle) {
 
   // hammers
   const isBullishHammer =
+    isBodyAtLeastMinPct &&
     lowerWick > body * 1.1 &&
     upperWick < lowerWick * 0.7 &&
     body > 0 &&
     body <= lowerWick;
 
   const isInvertedHammer =
+    isBodyAtLeastMinPct &&
     upperWick > body * 1.1 &&
     lowerWick < upperWick * 0.7 &&
     body > 0 &&
