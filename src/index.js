@@ -93,9 +93,9 @@ async function sidewaysGate({
   atr,
   price,
   overshoot = 2.5,
-  minPct = 0.0083, // ~0.84% after overshoot
-  maxPct = 0.0133, // e.g. 12% ATR/price → too volatile
-  minHours = 4, // block for at least N hours
+  minPct = 0.009, // ~0.84% after overshoot
+  maxPct = 0.0153, // e.g. 12% ATR/price → too volatile
+  minHours = 5, // block for at least N hours
   nowTs = Date.now(),
 }) {
   if (!Number.isFinite(atr) || atr <= 0)
@@ -148,25 +148,58 @@ async function sidewaysGate({
 
 function updateRisk(result) {
   lastResult = result;
+
+  // base risk = 50% of multiple (same as you were using)
+  const baseRisk = multiple * 0.6;
+  const REDUCTION_STEP = 0.2; // 20% of base per step
+  const MAX_REDUCE_STEPS = 2; // apply reductions on loss#2 and loss#3
+  const RISK_FLOOR_FACTOR = 0.35; // optional floor (35% of base) to avoid too-small sizes
+
   if (result === "win") {
     consecutiveLosses = 0;
-    // Reset only if > 50%
-    if (currentRisk > multiple * 0.5) {
-      currentRisk = multiple * 0.5;
-    }
-  } else if (result === "loss") {
-    consecutiveLosses++;
-    if (consecutiveLosses === 1) {
-      currentRisk = multiple * 0.5;
-    } else if (consecutiveLosses === 2) {
-      currentRisk = multiple * 0.8;
-      console.log(" 2 current risk  changed to  ", currentRisk);
-    } else {
-      currentRisk = multiple; // max risk
-      console.log("current risk  changed to basic ", currentRisk);
-    }
+    // restore to base (but don't accidentally inflate above base)
+    currentRisk = baseRisk;
+    console.log(
+      "updateRisk: WIN -> reset consecutiveLosses; currentRisk =",
+      currentRisk
+    );
+    return;
+  }
+
+  // result is a loss
+  consecutiveLosses = (consecutiveLosses || 0) + 1;
+
+  // compute reduction steps: loss#1 -> 0 steps, loss#2 -> 1 step, loss#3 -> 2 steps, loss#4+ -> hold at max steps
+  const steps = Math.min(Math.max(consecutiveLosses - 1, 0), MAX_REDUCE_STEPS);
+  const reduced = baseRisk * (1 - REDUCTION_STEP * steps);
+  const floor = baseRisk * RISK_FLOOR_FACTOR;
+  currentRisk = Math.max(reduced, floor);
+
+  if (consecutiveLosses === 1) {
+    console.log(
+      "updateRisk: LOSS #1 -> keeping base risk:",
+      currentRisk.toFixed(6)
+    );
+  } else if (consecutiveLosses === 2) {
+    console.log(
+      "updateRisk: LOSS #2 -> reduced risk to:",
+      currentRisk.toFixed(6)
+    );
+  } else if (consecutiveLosses === 3) {
+    console.log(
+      "updateRisk: LOSS #3 -> reduced risk to:",
+      currentRisk.toFixed(6)
+    );
+  } else {
+    console.log(
+      "updateRisk: LOSS #" +
+        consecutiveLosses +
+        " -> holding reduced risk at floor/level:",
+      currentRisk.toFixed(6)
+    );
   }
 }
+
 function isOverextended(ohlcv, lookback = 9, threshold = 0.025) {
   // exclude the live candle (use only completed candles)
   const recent = ohlcv.slice(-lookback - 1, -1); // last 7 *completed* candles
@@ -377,7 +410,7 @@ const findTrades = async () => {
           );
           continue;
         }
-        const extended = isOverextended(ohlcv, 7, 0.026); // 3% in last 7 candles
+        const extended = isOverextended(ohlcv, 7, 0.03); // 3% in last 7 candles
         if (extended) {
           console.log(
             "⚠️ Market already moved 3% in last 7 candles. Skipping hammer entry."
@@ -615,7 +648,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   // --- EMA proximity ---
   const emaDiff = close - ema;
   const emaDistancePct = (emaDiff / ema) * 100; // % distance
-  const isNearEMA = Math.abs(emaDiff) <= ema * 0.013; // ~0.92%
+  const isNearEMA = Math.abs(emaDiff) <= ema * 0.017; // ~0.92%
 
   // --- Ranges, bodies, wicks ---
   const range = Math.max(1e-9, high - low);
@@ -631,14 +664,12 @@ function checkLastCandle(candle, ema, prevCandle) {
 
   // hammers
   const isBullishHammer =
-    isBodyAtLeastMinPct &&
     lowerWick > body * 1.1 &&
     upperWick < lowerWick * 0.7 &&
     body > 0 &&
     body <= lowerWick;
 
   const isInvertedHammer =
-    isBodyAtLeastMinPct &&
     upperWick > body * 1.1 &&
     lowerWick < upperWick * 0.7 &&
     body > 0 &&
@@ -696,11 +727,11 @@ function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
   if (trend === "bullish") {
-    upperProximityRange = ema * 0.024; // 0.02%
-    lowerProximityRange = ema * 0.016; // 0.015%
+    upperProximityRange = ema * 0.03; // 0.02%
+    lowerProximityRange = ema * 0.02; // 0.015%
   } else if (trend === "bearish") {
-    upperProximityRange = ema * 0.016; // 0.5%
-    lowerProximityRange = ema * 0.024; // 0.8%
+    upperProximityRange = ema * 0.02; // 0.5%
+    lowerProximityRange = ema * 0.03; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
     upperProximityRange = ema * 0.0065;
@@ -758,7 +789,7 @@ const goToSmallerFrame = async (type, percentDiff, emapct) => {
         console.log("✅ Breakout! Placing market BUY");
         let opp = pct < 0;
         if (opp) {
-          if (isOverextended(ohlcv, 4, 0.016)) {
+          if (isOverextended(ohlcv, 4, 0.02)) {
             console.log(
               "not placing order. as its overextended against the trend"
             );
@@ -788,7 +819,7 @@ const goToSmallerFrame = async (type, percentDiff, emapct) => {
       if (safePrice <= low) {
         let opp = pct > 0;
         if (opp) {
-          if (isOverextended(ohlcv, 4, 0.013)) {
+          if (isOverextended(ohlcv, 4, 0.018)) {
             console.log(
               "not placing order. as its overextended against the trend"
             );
@@ -835,9 +866,9 @@ const trackOpenPosition = async () => {
   let currentSLATRMultiplier = 3.5;
   let pctt = Math.abs(pct);
   let risk = "safe";
-  if (pctt > 0.5 && pctt < 0.85) {
+  if (pctt > 0.7 && pctt < 0.9) {
     risk = "medium";
-  } else if (pctt > 0.85 && pctt < 1.2) {
+  } else if (pctt > 0.9 && pctt < 1.5) {
     risk = "hard";
   }
 
@@ -864,7 +895,7 @@ const trackOpenPosition = async () => {
         `📊 [${side.toUpperCase()}] Qty: ${posSize} | Entry: ${entryPrice} | Price: ${safePrice} | PnL: ${unrealizedPnL}`
       );
 
-      const profitThreshold = ATR * 1.5;
+      const profitThreshold = ATR * 1.4;
       const tightenSLDistance = ATR * 1.6;
 
       if (
@@ -920,7 +951,7 @@ const trackOpenPosition = async () => {
         trailingActive = false;
       }
 
-      const profitThreshold2 = ATR * 4;
+      const profitThreshold2 = ATR * 3;
       const tightenSLDistance2 = ATR * 0.3;
 
       if (
@@ -964,12 +995,11 @@ const trackOpenPosition = async () => {
         trailingActive = false;
       }
 
-      const profitThreshold3 = ATR * 6;
+      const profitThreshold3 = ATR * 5.5;
 
       // ✅ protect price just like placeOrder
 
-      const newSL =
-        side === "buy" ? safePrice - ATR * 4.5 : safePrice + ATR * 4.5;
+      const newSL = side === "buy" ? safePrice - ATR * 4 : safePrice + ATR * 4;
 
       if (
         !slTightened3 &&
@@ -1246,9 +1276,9 @@ const placeMarketOrder = async (side, atr, pct) => {
   // ===== Step 0: Prevent double entry =====
   let pctt = Math.abs(pct);
   let risk = "safe";
-  if (pctt > 0.5 && pctt < 0.85) {
+  if (pctt > 0.7 && pctt < 0.9) {
     risk = "medium";
-  } else if (pctt > 0.85 && pctt < 1.2) {
+  } else if (pctt > 0.9 && pctt < 1.5) {
     risk = "hard";
   }
   const positions = await binance.fetchPositions();
@@ -1272,8 +1302,8 @@ const placeMarketOrder = async (side, atr, pct) => {
   const amountTP2 = totalAmount * 0.45;
 
   ATR = atr;
-  const slMultiplier = 2.4;
-  const tp1Multiplier = risk == "safe" ? 9.4 : risk == "medium" ? 5.2 : 4.2;
+  const slMultiplier = 2;
+  const tp1Multiplier = risk == "safe" ? 8.4 : risk == "medium" ? 4.5 : 3.5;
 
   const slSide = side === "buy" ? "sell" : "buy";
 
