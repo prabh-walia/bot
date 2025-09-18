@@ -664,14 +664,14 @@ function checkLastCandle(candle, ema, prevCandle) {
 
   // hammers
   const isBullishHammer =
-    lowerWick > body * 1.1 &&
-    upperWick < lowerWick * 0.7 &&
+    lowerWick > body * 0.8 &&
+    upperWick < lowerWick * 0.3 &&
     body > 0 &&
     body <= lowerWick;
 
   const isInvertedHammer =
-    upperWick > body * 1.1 &&
-    lowerWick < upperWick * 0.7 &&
+    upperWick > body * 0.8 &&
+    lowerWick < upperWick * 0.3 &&
     body > 0 &&
     body <= upperWick;
 
