@@ -623,9 +623,7 @@ const main = async () => {
         await trackOpenPosition();
         lastOrderExecuted = false;
         lastSlOrderExecuted = false;
-        firstBook = false;
-        secondBook = false;
-        finalBook = false;
+
         profitBooked = false;
         console.log("⏸ Pausing execution for 1 hour... 1");
         await cancelAllOpenOrders();
