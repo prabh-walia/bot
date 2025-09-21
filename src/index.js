@@ -93,8 +93,8 @@ async function sidewaysGate({
   atr,
   price,
   overshoot = 2.1,
-  minPct = 0.009, // ~0.84% after overshoot
-  maxPct = 0.0153, // e.g. 12% ATR/price → too volatile
+  minPct = 0.0077, // ~0.84% after overshoot
+  maxPct = 0.011, // e.g. 12% ATR/price → too volatile
   minHours = 5, // block for at least N hours
   nowTs = Date.now(),
 }) {
@@ -410,7 +410,7 @@ const findTrades = async () => {
           );
           continue;
         }
-        const extended = isOverextended(ohlcv, 7, 0.03); // 3% in last 7 candles
+        const extended = isOverextended(ohlcv, 7, 0.027); // 3% in last 7 candles
         if (extended) {
           console.log(
             "⚠️ Market already moved 3% in last 7 candles. Skipping hammer entry."
@@ -648,7 +648,7 @@ function checkLastCandle(candle, ema, prevCandle) {
   // --- EMA proximity ---
   const emaDiff = close - ema;
   const emaDistancePct = (emaDiff / ema) * 100; // % distance
-  const isNearEMA = Math.abs(emaDiff) <= ema * 0.017; // ~0.92%
+  const isNearEMA = Math.abs(emaDiff) <= ema * 0.013; // ~0.92%
 
   // --- Ranges, bodies, wicks ---
   const range = Math.max(1e-9, high - low);
@@ -727,11 +727,11 @@ function checkLastCandleforbigtrend(ema, close) {
   let upperProximityRange, lowerProximityRange;
 
   if (trend === "bullish") {
-    upperProximityRange = ema * 0.03; // 0.02%
-    lowerProximityRange = ema * 0.02; // 0.015%
+    upperProximityRange = ema * 0.023; // 0.02%
+    lowerProximityRange = ema * 0.018; // 0.015%
   } else if (trend === "bearish") {
-    upperProximityRange = ema * 0.02; // 0.5%
-    lowerProximityRange = ema * 0.03; // 0.8%
+    upperProximityRange = ema * 0.018; // 0.5%
+    lowerProximityRange = ema * 0.023; // 0.8%
   } else {
     // fallback in case trend is undefined or unknown
     upperProximityRange = ema * 0.0065;
@@ -866,9 +866,9 @@ const trackOpenPosition = async () => {
   let currentSLATRMultiplier = 3.5;
   let pctt = Math.abs(pct);
   let risk = "safe";
-  if (pctt > 0.7 && pctt < 0.9) {
+  if (pctt > 0.55 && pctt < 0.75) {
     risk = "medium";
-  } else if (pctt > 0.9 && pctt < 1.5) {
+  } else if (pctt > 0.75 && pctt < 1.2) {
     risk = "hard";
   }
 
@@ -1175,7 +1175,7 @@ const trackOpenPosition = async () => {
             ? (safePrice - entryPrice) / entryPrice
             : (entryPrice - safePrice) / entryPrice;
 
-        if (movePct >= 0.08) {
+        if (movePct >= 0.076) {
           console.warn(
             "🚨 Hard-exit: +10% move from entry. Closing position now."
           );
@@ -1276,9 +1276,9 @@ const placeMarketOrder = async (side, atr, pct) => {
   // ===== Step 0: Prevent double entry =====
   let pctt = Math.abs(pct);
   let risk = "safe";
-  if (pctt > 0.7 && pctt < 0.9) {
+  if (pctt > 0.55 && pctt < 0.75) {
     risk = "medium";
-  } else if (pctt > 0.9 && pctt < 1.5) {
+  } else if (pctt > 0.75 && pctt < 1.2) {
     risk = "hard";
   }
   const positions = await binance.fetchPositions();
@@ -1302,8 +1302,8 @@ const placeMarketOrder = async (side, atr, pct) => {
   const amountTP2 = totalAmount * 0.45;
 
   ATR = atr;
-  const slMultiplier = 2;
-  const tp1Multiplier = risk == "safe" ? 8.4 : risk == "medium" ? 4.5 : 3.5;
+  const slMultiplier = 2.1;
+  const tp1Multiplier = risk == "safe" ? 8.7 : risk == "medium" ? 4.9 : 3.8;
 
   const slSide = side === "buy" ? "sell" : "buy";
 
