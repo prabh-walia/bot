@@ -107,6 +107,8 @@ async function sidewaysGate({
 
   // 🚫 Too volatile → block
   if (atrPct > maxPct) {
+    console.log("pct->., ", atrPct);
+
     return { block: true, regime: "too_volatile", atrPct };
   }
 
